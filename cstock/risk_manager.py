@@ -59,6 +59,7 @@ class RiskManager:
         # 基础仓位计算
         position_factor = 1 - (self.current_drawdown / self.max_drawdown_pct)
         max_cash = cash * self.max_position_size * position_factor
+
         base_size = int(max_cash / price)
 
         # 根据波动率调整仓位
