@@ -59,15 +59,17 @@ class RiskManager:
         if self.current_drawdown >= self.max_drawdown_pct:
             return 0
 
-        # 基础仓位计算
-        position_factor = 1 - (self.current_drawdown / self.max_drawdown_pct)
+        # 优化基础仓位计算
+        # 1. 在低回撤时提供更大的仓位
+        # 2. 使用非线性函数使得回撤对仓位的影响更平滑
+        position_factor = 1 - pow(self.current_drawdown / self.max_drawdown_pct, 0.5)
         max_cash = cash * self.max_position_size * position_factor
 
+        # 根据波动率优化仓位
         base_size = int(max_cash / price)
-
-        # 根据波动率调整仓位
         if volatility is not None:
-            risk_factor = 1 / (1 + volatility)
+            # 优化波动率调整因子，使其在低波动率时提供更大的仓位
+            risk_factor = 1 / (1 + volatility * 0.5)  # 降低波动率的影响
             base_size = int(base_size * risk_factor)
 
         return max(0, base_size)

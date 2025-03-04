@@ -9,7 +9,7 @@ class BaseStrategy(bt.Strategy):
     """
 
     params = (
-        ("max_position_size", 0.5),  # 最大仓位比例
+        ("max_position_size", 0.8),  # 最大仓位比例
         ("stop_loss_pct", 0.1),  # 止损比例
         ("take_profit_pct", 0.5),  # 止盈比例
         ("max_drawdown_pct", 0.1),  # 最大回撤限制
