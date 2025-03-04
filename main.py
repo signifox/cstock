@@ -29,19 +29,9 @@ def main():
     # 运行回测
     results = engine.run_backtest()
 
-    # 分析结果
-    analysis = engine.get_analysis()
-    print("\n回测结果分析:")
-
-    # 打印回测结果摘要
-    print(f"\n总收益率: {analysis['总收益率']:.2f}%")
-    print(f"年化收益率: {analysis['年化收益率']:.2f}%")
-    print(f"夏普比率: {analysis['夏普比率']:.4f}")
-    print(f"最大回撤: {analysis['最大回撤']:.2f}%")
-    print(f"交易次数: {analysis['交易次数']}")
-    print(f"盈利交易: {analysis['盈利交易']}")
-    print(f"亏损交易: {analysis['亏损交易']}")
-    print(f"胜率: {analysis['胜率']:.2f}%")
+    # 创建分析器并打印结果摘要
+    analyzer = Analyzer(engine)
+    analyzer.print_summary()
 
     # 绘制回测结果
     engine.plot_results()
