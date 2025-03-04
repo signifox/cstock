@@ -9,9 +9,10 @@ class BaseStrategy(bt.Strategy):
     """
 
     params = (
-        ("max_position_size", 0.2),  # 最大仓位比例
-        ("stop_loss_pct", 0.02),  # 止损比例
-        ("take_profit_pct", 0.05),  # 止盈比例
+        ("max_position_size", 0.5),  # 最大仓位比例
+        ("stop_loss_pct", 0.1),  # 止损比例
+        ("take_profit_pct", 0.5),  # 止盈比例
+        ("max_drawdown_pct", 0.1),  # 最大回撤限制
         ("volatility_window", 20),  # 波动率计算窗口
         ("observation_position_pct", 0.1),  # 观察仓位比例
         ("keep_observation_position", False),  # 是否保留观察仓位
@@ -22,6 +23,7 @@ class BaseStrategy(bt.Strategy):
             max_position_size=self.params.max_position_size,
             stop_loss_pct=self.params.stop_loss_pct,
             take_profit_pct=self.params.take_profit_pct,
+            max_drawdown_pct=self.params.max_drawdown_pct,
         )
 
         # 记录每个交易的入场价格
@@ -117,9 +119,18 @@ class BaseStrategy(bt.Strategy):
             current_price = data.close[0]
 
             # 检查止损
-            if self.risk_manager.should_stop_loss(entry_price, current_price):
+            stop_loss_info = self.risk_manager.should_stop_loss(
+                entry_price, current_price, symbol=data._name
+            )
+            if stop_loss_info["should_stop"]:
+                stop_type = stop_loss_info["stop_type"]
+                loss_pct = stop_loss_info["loss_pct"]
+                drop_from_high = stop_loss_info["drop_from_high"]
+
+                stop_type_str = "追踪止损" if stop_type == "trailing" else "固定止损"
                 self.log(
-                    f"触发止损: {data._name}, 入场价: {entry_price:.2f}, 当前价: {current_price:.2f}"
+                    f"触发{stop_type_str}: {data._name}, 入场价: {entry_price:.2f}, 当前价: {current_price:.2f}, "
+                    f"亏损: {loss_pct:.2f}%, 回撤: {drop_from_high:.2f}%"
                 )
                 self.sell_position(data)
 
@@ -235,23 +246,48 @@ class BaseStrategy(bt.Strategy):
             sell_size = int(position.size * sell_ratio)
             if sell_size > 0:
                 self.sell(data=data, size=sell_size)
-                self.log(f"止损部分减仓: {data._name}, 减仓比例: {sell_ratio:.2%}, 数量: {sell_size}")
+                self.log(
+                    f"止损部分减仓: {data._name}, 减仓比例: {sell_ratio:.2%}, 数量: {sell_size}"
+                )
 
         # 止盈逻辑（盈利超过止盈线）
         elif pnl_pct > self.params.take_profit_pct:
-            # 根据盈利幅度计算卖出比例
-            # 基础止盈比例40%，每超过1%止盈线增加10%卖出比例
-            sell_ratio = min(0.4 + (pnl_pct - self.params.take_profit_pct) * 10, 0.8)
+            # 根据盈利幅度动态计算卖出比例
+            # 1. 基础止盈比例从20%开始
+            # 2. 每超过1%止盈线增加5%卖出比例
+            # 3. 最大卖出比例限制在90%，保留部分仓位追踪趋势
+            # 4. 考虑波动率因素，高波动率时提高卖出比例
+            prices = [
+                data.close[-i]
+                for i in range(self.params.volatility_window)
+                if len(data.close) > i
+            ]
+            volatility = self.risk_manager.calculate_volatility(prices)
+            volatility_factor = min(1.5, 1 + volatility) if volatility else 1.0
+
+            base_ratio = 0.2  # 基础卖出比例
+            increment_per_pct = 0.05  # 每1%增加的卖出比例
+            excess_profit = pnl_pct - self.params.take_profit_pct  # 超出止盈线的收益
+            dynamic_ratio = base_ratio + (excess_profit * increment_per_pct)
+
+            # 应用波动率因子并限制最大卖出比例
+            sell_ratio = min(0.9, dynamic_ratio * volatility_factor)
             sell_size = int(position.size * sell_ratio)
+
             if sell_size > 0:
                 self.sell(data=data, size=sell_size)
-                self.log(f"止盈部分减仓: {data._name}, 减仓比例: {sell_ratio:.2%}, 数量: {sell_size}, 盈利: {pnl_pct:.2%}")
+                self.log(
+                    f"止盈部分减仓: {data._name}, 减仓比例: {sell_ratio:.2%}, 数量: {sell_size}, "
+                    f"盈利: {pnl_pct:.2%}, 波动率系数: {volatility_factor:.2f}"
+                )
 
         # 其他信号触发的卖出
         else:
             if self.params.keep_observation_position:
                 # 计算观察仓位的数量（确保至少保留1股作为观察仓位）
-                observation_size = max(1, int(position.size * self.params.observation_position_pct))
+                observation_size = max(
+                    1, int(position.size * self.params.observation_position_pct)
+                )
                 # 卖出主要仓位，保留观察仓位
                 sell_size = position.size - observation_size
                 if sell_size > 0:

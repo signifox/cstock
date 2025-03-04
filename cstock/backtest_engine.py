@@ -53,8 +53,6 @@ class BacktestEngine:
 
         # 添加分析器
         cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
-        cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
-        cerebro.addanalyzer(bt.analyzers.Returns, _name="returns")
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trade")
 
         self.cerebro = cerebro
@@ -70,105 +68,8 @@ class BacktestEngine:
         # 保存策略实例
         self.strategy_instance = results[0]
 
-        # self.cerebro.plot(style="candlestick")  # 画图
+        self.cerebro.plot(style="candlestick")  # 画图
         return results
-
-    def plot_results(self, filename=None):
-        """绘制回测结果"""
-        if self.cerebro is None:
-            raise ValueError("请先运行回测")
-
-        # 设置中文字体
-        plt.rcParams["font.sans-serif"] = [
-            "Arial Unicode MS"
-        ]  # macOS系统预装的支持中文的字体
-        plt.rcParams["axes.unicode_minus"] = False  # 用来正常显示负号
-
-        # 创建多个子图
-        fig = plt.figure(figsize=(15, 10))
-
-        # 获取日期列表
-        first_data = self.strategy_instance.datas[0]
-        dates = [bt.num2date(x).strftime("%Y-%m-%d") for x in first_data.lines.datetime.array[-len(self.strategy_instance._portfolio_value_history):]]
-
-        # 设置日期标签显示间隔
-        date_interval = max(len(dates) // 10, 1)  # 确保至少显示10个标签
-        selected_dates = dates[::date_interval]
-        selected_indices = list(range(0, len(dates), date_interval))
-
-        # 绘制投资组合价值曲线
-        ax1 = plt.subplot(2, 1, 1)
-        ax1.plot(
-            range(len(dates)), self.strategy_instance._portfolio_value_history, label="投资组合价值"
-        )
-        ax1.set_title("投资组合表现")
-        ax1.set_xlabel("交易日期")
-        ax1.set_ylabel("价值")
-        ax1.set_xticks(selected_indices)
-        ax1.set_xticklabels(selected_dates, rotation=45, ha='right')
-        ax1.legend()
-        ax1.grid(True)
-
-        # 绘制个股价值曲线
-        ax2 = plt.subplot(2, 1, 2)
-        for symbol in self.strategy_instance._value_history:
-            ax2.plot(range(len(dates)), self.strategy_instance._value_history[symbol], label=symbol)
-        ax2.set_title("个股持仓价值")
-        ax2.set_xlabel("交易日期")
-        ax2.set_ylabel("价值")
-        ax2.set_xticks(selected_indices)
-        ax2.set_xticklabels(selected_dates, rotation=45, ha='right')
-        ax2.legend()
-        ax2.grid(True)
-
-        plt.tight_layout()
-
-        if filename:
-            plt.savefig(filename)
-
-        plt.show()
-
-        # 绘制回撤图
-        fig = plt.figure(figsize=(15, 10))
-
-        # 绘制投资组合回撤
-        ax1 = plt.subplot(2, 1, 1)
-        ax1.plot(
-            range(len(dates)),
-            self.strategy_instance._portfolio_drawdown_history,
-            label="投资组合回撤",
-            color="red",
-        )
-        ax1.set_title("投资组合回撤")
-        ax1.set_xlabel("交易日期")
-        ax1.set_ylabel("回撤 (%)")
-        ax1.set_xticks(selected_indices)
-        ax1.set_xticklabels(selected_dates, rotation=45, ha='right')
-        ax1.legend()
-        ax1.grid(True)
-
-        # 绘制个股回撤
-        ax2 = plt.subplot(2, 1, 2)
-        for symbol in self.strategy_instance._drawdown_history:
-            ax2.plot(
-                range(len(dates)),
-                self.strategy_instance._drawdown_history[symbol],
-                label=f"{symbol}回撤",
-            )
-        ax2.set_title("个股回撤")
-        ax2.set_xlabel("交易日期")
-        ax2.set_ylabel("回撤 (%)")
-        ax2.set_xticks(selected_indices)
-        ax2.set_xticklabels(selected_dates, rotation=45, ha='right')
-        ax2.legend()
-        ax2.grid(True)
-
-        plt.tight_layout()
-
-        if filename:
-            plt.savefig(filename + "_drawdown")
-
-        plt.show()
 
     def get_analysis(self):
         """获取回测分析结果"""
@@ -177,8 +78,6 @@ class BacktestEngine:
 
         # 获取各种分析结果
         sharpe = self.strategy_instance.analyzers.sharpe.get_analysis()
-        drawdown = self.strategy_instance.analyzers.drawdown.get_analysis()
-        returns = self.strategy_instance.analyzers.returns.get_analysis()
         trade_analyzer = self.strategy_instance.analyzers.trade.get_analysis()
 
         # 获取回测周期

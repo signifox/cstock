@@ -33,9 +33,6 @@ def main():
     analyzer = Analyzer(engine)
     analyzer.print_summary()
 
-    # 绘制回测结果
-    engine.plot_results()
-
 
 if __name__ == "__main__":
     main()
