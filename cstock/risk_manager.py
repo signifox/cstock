@@ -33,7 +33,7 @@ class RiskManager:
         self.initial_equity = None
         self.current_drawdown = 0
 
-    def calculate_position_size(self, cash, price, volatility=None, symbol=None):
+    def calculate_position_size(self, cash, price, volatility=None, symbol=None, current_drawdown=None, stock_drawdown=None):
         """
         计算建仓数量，考虑风险因素动态调整仓位
 
@@ -42,27 +42,28 @@ class RiskManager:
             price (float): 当前价格
             volatility (float, optional): 波动率
             symbol (str, optional): 交易标的代码
+            current_drawdown (float, optional): 当前投资组合回撤
+            stock_drawdown (float, optional): 单个股票的回撤
 
         返回:
             int: 建议的建仓数量
         """
-        # 初始化账户权益
-        if self.initial_equity is None:
-            self.initial_equity = cash
+        # 使用传入的回撤值，如果没有传入则使用默认值0
+        self.current_drawdown = current_drawdown if current_drawdown is not None else 0
+        stock_drawdown = stock_drawdown if stock_drawdown is not None else 0
 
-        # 计算当前回撤
-        self.current_drawdown = max(
-            0, (self.initial_equity - cash) / self.initial_equity
-        )
-
-        # 如果超过最大回撤限制，不开新仓
+        # 如果投资组合回撤超过最大回撤限制，不开新仓
         if self.current_drawdown >= self.max_drawdown_pct:
+            return 0
+        
+        # 如果单个股票回撤超过最大回撤限制，也不开新仓
+        if stock_drawdown >= self.max_drawdown_pct:
             return 0
 
         # 优化基础仓位计算
         # 1. 在低回撤时提供更大的仓位
         # 2. 使用非线性函数使得回撤对仓位的影响更平滑
-        position_factor = 1 - pow(self.current_drawdown / self.max_drawdown_pct, 0.5)
+        position_factor = 1 - pow(stock_drawdown / self.max_drawdown_pct, 0.5)
         max_cash = cash * self.max_position_size * position_factor
 
         # 根据波动率优化仓位

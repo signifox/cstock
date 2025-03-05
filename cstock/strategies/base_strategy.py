@@ -104,7 +104,14 @@ class BaseStrategy(bt.Strategy):
         ]
         volatility = self.risk_manager.calculate_volatility(prices)
 
-        return self.risk_manager.calculate_position_size(cash, price, volatility)
+        # 获取当前股票的回撤
+        stock_drawdown = 0
+        if data._name in self._drawdown_history and self._drawdown_history[data._name]:
+            stock_drawdown = self._drawdown_history[data._name][-1] / 100  # 转换为小数
+
+        return self.risk_manager.calculate_position_size(
+            cash, price, volatility, data._name, stock_drawdown=stock_drawdown
+        )
 
     def check_exit_signals(self):
         """检查是否需要止盈止损"""
@@ -156,6 +163,7 @@ class BaseStrategy(bt.Strategy):
         self._highest_portfolio_value = max(
             self._highest_portfolio_value, portfolio_value
         )
+
         if self._highest_portfolio_value > 0:
             drawdown = (
                 (self._highest_portfolio_value - portfolio_value)
@@ -189,22 +197,28 @@ class BaseStrategy(bt.Strategy):
 
             # 更新个股最高价值和回撤
             if current_value > 0:  # 只在有持仓时更新最高价值
-                self._highest_values[symbol] = max(
-                    self._highest_values[symbol], current_value
-                )
-
-            if self._highest_values[symbol] > 0:
+                if self._highest_values[symbol] == 0:  # 新开仓或重新开仓
+                    self._highest_values[symbol] = current_value
+                else:  # 持续持仓中
+                    self._highest_values[symbol] = max(
+                        self._highest_values[symbol], current_value
+                    )
+                # 计算回撤
                 stock_drawdown = (
                     (self._highest_values[symbol] - current_value)
                     / self._highest_values[symbol]
                     * 100
                 )
-                # 当完全清仓时，将回撤重置为0
-                if current_value == 0:
-                    stock_drawdown = 0
-                    self._highest_values[symbol] = 0  # 重置最高价值
-            else:
+                # 打印个股持仓信息
+                # print(
+                #     f"股票: {symbol}, 持仓数量: {position.size}, "
+                #     f"持仓市值: {current_value:.2f}, 最高市值: {self._highest_values[symbol]:.2f}, "
+                #     f"回撤: {stock_drawdown:.2f}%"
+                # )
+            else:  # 无持仓时
                 stock_drawdown = 0
+                self._highest_values[symbol] = 0  # 重置最高价值
+
             self._drawdown_history[symbol].append(stock_drawdown)
 
         # 验证总持仓市值与投资组合价值的关系
