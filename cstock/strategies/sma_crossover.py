@@ -58,16 +58,13 @@ class SMACrossoverStrategy(BaseStrategy):
             if not self.getposition(data).size:
                 # 没有持仓，检查是否有买入信号
                 if crossover == 1:  # 短期均线上穿长期均线
-                    self.log(f"买入信号 {data._name}, 价格: {data.close[0]:.2f}")
                     # 使用风险管理器计算建仓数量
                     size = self.get_position_size(data)
                     self.orders[data._name] = self.buy(data=data, size=size)
-
-            else:
-                # 有持仓，检查是否有卖出信号
-                if crossover == -1:  # 短期均线下穿长期均线
-                    self.log(f"卖出信号 {data._name}, 价格: {data.close[0]:.2f}")
-                    # 卖出信号，清仓
-                    self.orders[data._name] = self.sell(
-                        data=data, size=self.getposition(data).size
-                    )
+                else:
+                    # 有持仓，检查是否有卖出信号
+                    if crossover == -1:  # 短期均线下穿长期均线
+                        # 卖出信号，清仓
+                        self.orders[data._name] = self.sell(
+                            data=data, size=self.getposition(data).size
+                        )

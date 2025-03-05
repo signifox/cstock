@@ -4,12 +4,9 @@ import numpy as np
 class RiskManager:
     def __init__(
         self,
-        max_position_size=0.2,
-        stop_loss_pct=0.05,
-        take_profit_pct=0.15,
-        trailing_stop_loss_pct=0.05,
-        trailing_take_profit_pct=0.05,
-        max_drawdown_pct=0.1,
+        max_position_size,
+        stop_loss_pct,
+        take_profit_pct,
     ):
         """
         初始化风险管理器
@@ -18,66 +15,31 @@ class RiskManager:
             max_position_size (float): 单个头寸最大仓位比例（占总资金的比例）
             stop_loss_pct (float): 止损百分比
             take_profit_pct (float): 止盈百分比
-            trailing_stop_loss_pct (float): 追踪止损百分比
-            trailing_take_profit_pct (float): 追踪止盈百分比
-            max_drawdown_pct (float): 最大回撤限制
         """
         self.max_position_size = max_position_size
         self.stop_loss_pct = stop_loss_pct
         self.take_profit_pct = take_profit_pct
-        self.trailing_stop_loss_pct = trailing_stop_loss_pct
-        self.trailing_take_profit_pct = trailing_take_profit_pct
-        self.max_drawdown_pct = max_drawdown_pct
         self.highest_price = {}
-        self.lowest_price = {}
-        self.initial_equity = None
-        self.current_drawdown = 0
 
-    def calculate_position_size(self, cash, price, volatility=None, symbol=None, current_drawdown=None, stock_drawdown=None):
+    def calculate_position_size(self, cash, price, symbol=None):
         """
         计算建仓数量，考虑风险因素动态调整仓位
 
         参数:
             cash (float): 当前可用资金
             price (float): 当前价格
-            volatility (float, optional): 波动率
             symbol (str, optional): 交易标的代码
-            current_drawdown (float, optional): 当前投资组合回撤
-            stock_drawdown (float, optional): 单个股票的回撤
 
         返回:
             int: 建议的建仓数量
         """
-        # 使用传入的回撤值，如果没有传入则使用默认值0
-        self.current_drawdown = current_drawdown if current_drawdown is not None else 0
-        stock_drawdown = stock_drawdown if stock_drawdown is not None else 0
-
-        # 如果投资组合回撤超过最大回撤限制，不开新仓
-        if self.current_drawdown >= self.max_drawdown_pct:
-            return 0
-        
-        # 如果单个股票回撤超过最大回撤限制，也不开新仓
-        if stock_drawdown >= self.max_drawdown_pct:
-            return 0
-
-        # 优化基础仓位计算
-        # 1. 在低回撤时提供更大的仓位
-        # 2. 使用非线性函数使得回撤对仓位的影响更平滑
-        position_factor = 1 - pow(stock_drawdown / self.max_drawdown_pct, 0.5)
-        max_cash = cash * self.max_position_size * position_factor
-
-        # 根据波动率优化仓位
+        # 计算基础仓位
+        max_cash = cash * self.max_position_size
         base_size = int(max_cash / price)
-        if volatility is not None:
-            # 优化波动率调整因子，使其在低波动率时提供更大的仓位
-            risk_factor = 1 / (1 + volatility * 0.5)  # 降低波动率的影响
-            base_size = int(base_size * risk_factor)
 
         return max(0, base_size)
 
-    def should_stop_loss(
-        self, entry_price, current_price, direction="long", symbol=None
-    ):
+    def should_stop_loss(self, entry_price, current_price, direction="long"):
         """
         检查是否应该止损
 
@@ -85,58 +47,16 @@ class RiskManager:
             entry_price (float): 入场价格
             current_price (float): 当前价格
             direction (str): 交易方向，'long'或'short'
-            symbol (str, optional): 交易标的代码
 
         返回:
-            dict: 包含止损信息的字典，包括：
-                - should_stop (bool): 是否应该止损
-                - stop_type (str): 止损类型（'fixed'或'trailing'）
-                - loss_pct (float): 当前亏损百分比
-                - drop_from_high (float): 从最高点的回撤百分比
+            bool: 是否应该止损
         """
-        # 初始化变量
-        loss_pct = 0
-        fixed_stop = False
-        drop_from_high = 0
-
         if direction == "long":
-            # 计算当前盈亏百分比（正值表示盈利，负值表示亏损）
             pnl_pct = (current_price - entry_price) / entry_price
-            
-            # 检查固定止损（只在亏损时判断）
-            if pnl_pct < 0:  # 只在亏损时检查固定止损
-                loss_pct = abs(pnl_pct)
-                fixed_stop = loss_pct > self.stop_loss_pct
-            
-            # 更新最高价格并计算回撤
-            if symbol not in self.highest_price:
-                self.highest_price[symbol] = current_price
-            else:
-                self.highest_price[symbol] = max(self.highest_price[symbol], current_price)
-            
-            if self.highest_price[symbol] > 0:
-                drop_from_high = ((self.highest_price[symbol] - current_price) / self.highest_price[symbol]) * 100
-            
-            return {
-                "should_stop": fixed_stop,
-                "stop_type": "fixed" if fixed_stop else None,
-                "loss_pct": loss_pct * 100,  # 转换为百分比
-                "drop_from_high": drop_from_high  # 从最高点的回撤百分比
-            }
+            return pnl_pct < -self.stop_loss_pct
         else:  # short
-            # 计算当前盈亏百分比（正值表示盈利，负值表示亏损）
             pnl_pct = (entry_price - current_price) / entry_price
-            
-            # 检查固定止损（只在亏损时判断）
-            if pnl_pct < 0:  # 只在亏损时检查固定止损
-                loss_pct = abs(pnl_pct)
-                fixed_stop = loss_pct > self.stop_loss_pct
-            
-            return {
-                "should_stop": fixed_stop,
-                "stop_type": "fixed" if fixed_stop else None,
-                "loss_pct": loss_pct * 100  # 转换为百分比
-            }
+            return pnl_pct < -self.stop_loss_pct
 
     def should_take_profit(self, entry_price, current_price, direction="long"):
         """
@@ -154,26 +74,3 @@ class RiskManager:
             return current_price > entry_price * (1 + self.take_profit_pct)
         else:  # short
             return current_price < entry_price * (1 - self.take_profit_pct)
-
-    def calculate_volatility(self, prices, window=20):
-        """
-        计算价格波动率
-
-        参数:
-            prices (list): 历史价格列表
-            window (int): 计算窗口
-
-        返回:
-            float: 波动率
-        """
-        if len(prices) < window:
-            return None
-
-        # 将价格列表转换为numpy数组并计算对数收益率
-        prices_array = np.array(prices)
-        returns = np.log(prices_array[1:] / prices_array[:-1])
-
-        # 计算波动率（标准差）
-        volatility = np.std(returns[-window:]) * np.sqrt(252)  # 年化波动率
-
-        return volatility

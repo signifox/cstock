@@ -68,7 +68,7 @@ class BacktestEngine:
         # 保存策略实例
         self.strategy_instance = results[0]
 
-        self.cerebro.plot(style="candlestick")  # 画图
+        # self.cerebro.plot(style="candlestick")  # 画图
         return results
 
     def get_analysis(self):
