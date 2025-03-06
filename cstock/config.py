@@ -5,7 +5,7 @@ class Config:
     def __init__(self):
         # 数据相关配置
         self.DATA_DIR = "data"
-        self.START_DATE = "2020-01-01"
+        self.START_DATE = "2022-06-01"
         self.END_DATE = "2024-12-31"
 
         # 回测相关配置
