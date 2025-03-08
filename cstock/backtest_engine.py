@@ -113,6 +113,9 @@ class BacktestEngine:
         # 计算最大回撤
         max_drawdown = self._calculate_max_drawdown()
 
+        # 获取OrderMetric统计数据
+        order_metrics = self.strategy_instance.order_metric.get_metrics()
+
         # 整理投资组合分析结果
         analysis = {
             "总收益率": total_return,
@@ -123,6 +126,12 @@ class BacktestEngine:
             "盈利交易": trade_stats["won"],
             "亏损交易": trade_stats["lost"],
             "胜率": trade_stats["win_rate"],
+            "总盈亏": order_metrics["total_pnl"],
+            "最大单笔盈利": order_metrics["max_profit"],
+            "最大单笔亏损": order_metrics["max_loss"],
+            "平均持仓天数": order_metrics["avg_holding_period"],
+            "总手续费": order_metrics["total_commission"],
+            "出场类型统计": order_metrics["exit_types"],
         }
 
         return analysis
@@ -149,7 +158,17 @@ class BacktestEngine:
 
     def _calculate_max_drawdown(self):
         """计算最大回撤"""
-        if not self.strategy_instance._portfolio_drawdown_history:
-            return 0.0
+        portfolio_value = self.cerebro.broker.getvalue()
+        highest_value = portfolio_value
+        max_drawdown = 0.0
 
-        return max(self.strategy_instance._portfolio_drawdown_history)
+        # 遍历每个数据点计算回撤
+        for data in self.strategy_instance.datas[0]:
+            current_value = self.cerebro.broker.getvalue()
+            highest_value = max(highest_value, current_value)
+
+            if highest_value > 0:
+                drawdown = ((highest_value - current_value) / highest_value) * 100
+                max_drawdown = max(max_drawdown, drawdown)
+
+        return max_drawdown
