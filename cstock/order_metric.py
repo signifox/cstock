@@ -87,8 +87,7 @@ class OrderMetric:
                 metrics['current_drawdown'] = current_drawdown
                 metrics['max_drawdown'] = max(metrics['max_drawdown'], current_drawdown)
                 
-                print(f"[回撤计算] {symbol} - 当前价值: {current_value:.2f}, 最高价值: {metrics['highest_value']:.2f}, "
-                      f"当前回撤: {current_drawdown:.2f}%, 最大回撤: {metrics['max_drawdown']:.2f}%")
+                # 回撤数据已记录到metrics中，无需额外打印
             
             # 清仓时重置最高价值，为下次建仓做准备
             metrics['highest_value'] = 0.0

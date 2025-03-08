@@ -28,22 +28,17 @@ class SMACrossoverStrategy(BaseStrategy):
             crossover = bt.indicators.CrossOver(sma_short, sma_long)
 
             # RSI指标
-            rsi = bt.indicators.RSI(
-                data.close,
-                period=self.params.rsi_period
-            )
+            rsi = bt.indicators.RSI(data.close, period=self.params.rsi_period)
 
             # 成交量均线
-            volume_sma = bt.indicators.SimpleMovingAverage(
-                data.volume, period=20
-            )
+            volume_sma = bt.indicators.SimpleMovingAverage(data.volume, period=20)
 
             self.indicators[data._name] = {
                 "sma_short": sma_short,
                 "sma_long": sma_long,
                 "crossover": crossover,
                 "rsi": rsi,
-                "volume_sma": volume_sma
+                "volume_sma": volume_sma,
             }
 
     def next(self):
@@ -58,56 +53,16 @@ class SMACrossoverStrategy(BaseStrategy):
             sma_long = indicators["sma_long"][0]
             crossover = indicators["crossover"][0]
             rsi = indicators["rsi"][0]
-            volume_sma = indicators["volume_sma"][0]
-            current_price = data.close[0]
-            current_volume = data.volume[0]
 
-            # 记录当前的技术指标状态
-            self.log(
-                f"技术指标状态 - {data._name}: 价格={current_price:.2f}, "
-                f"短期均线={sma_short:.2f}, 长期均线={sma_long:.2f}, "
-                f"交叉信号={crossover}, RSI={rsi:.2f}, "
-                f"成交量={current_volume}, 成交量均线={volume_sma:.2f}"
-            )
-
-            # 数据质量检查
-            if not self._validate_data(data):
-                continue
-
-            if not self.getposition(data).size:
-                # 买入条件：均线金叉
-                if crossover == 1:
-                    self.log(f"检测到买入信号 - {data._name}: "
-                            f"短期均线上穿长期均线, RSI={rsi:.2f}, "
-                            f"成交量={current_volume}(均线的{current_volume/volume_sma:.2f}倍)")
-                    size = self.get_position_size(data)
+            # 检查是否满足买入条件
+            if not self.getposition(data).size and sma_short > sma_long:
+                # 计算建仓数量
+                size = self.get_position_size(data)
+                if size > 0:
                     self.orders[data._name] = self.buy(data=data, size=size)
-            else:
-                # 卖出条件：均线死叉 或 RSI超买
-                if crossover == -1 or rsi > self.params.rsi_upper:
-                    reason = "短期均线下穿长期均线" if crossover == -1 else f"RSI超买({rsi:.2f})"
-                    self.log(f"检测到卖出信号 - {data._name}: {reason}")
-                    self.orders[data._name] = self.sell(
-                        data=data, size=self.getposition(data).size
-                    )
+                    self.log(f"买入{data._name}, 价格: {data.close[0]}, 数量: {size}")
 
-    def _validate_data(self, data):
-        """验证数据质量"""
-        current_price = data.close[0]
-        current_volume = data.volume[0]
-
-        # 检查是否有异常值
-        if current_price <= 0 or current_volume <= 0:
-            self.log(f"数据异常 - {data._name}: 价格={current_price:.2f}, 成交量={current_volume}")
-            return False
-
-        # 检查价格波动是否异常（如果有前一天的数据）
-        if len(data) > 1:
-            prev_price = data.close[-1]
-            price_change = abs(current_price - prev_price) / prev_price
-            if price_change > 0.2:  # 价格变动超过20%
-                self.log(f"价格波动异常 - {data._name}: 当前价格={current_price:.2f}, "
-                         f"前一日价格={prev_price:.2f}, 变动率={price_change:.2%}")
-                return False
-
-        return True
+            # 检查是否满足卖出条件
+            elif self.getposition(data).size and sma_short < sma_long:
+                size = self.sell_position(data)
+                self.log(f"卖出{data._name}, 价格: {data.close[0]},数量: {size}")

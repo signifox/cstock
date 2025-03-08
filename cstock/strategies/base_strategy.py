@@ -83,7 +83,15 @@ class BaseStrategy(bt.Strategy):
                 )
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
-            self.log(f"订单取消/保证金不足/拒绝: {order.data._name}")
+            error_type = {
+                order.Canceled: "订单取消",
+                order.Margin: "保证金不足",
+                order.Rejected: "订单被拒绝",
+            }.get(order.status)
+            error_detail = f"{error_type}: {order.data._name}"
+            if hasattr(order, "info") and order.info:
+                error_detail += f", 原因: {order.info}"
+            self.log(error_detail)
             # 记录失败的交易
             self.position_status[order.data._name] = "lost"
 
@@ -116,9 +124,23 @@ class BaseStrategy(bt.Strategy):
                 continue
 
             # 检查是否触发止盈止损
+            # 获取当前RSI值和成交量比率
+            indicators = getattr(self, 'indicators', {})
+            rsi = None
+            volume_ratio = None
+            if data._name in indicators:
+                rsi = indicators[data._name].get('rsi', [None])[0]
+                volume_sma = indicators[data._name].get('volume_sma', [None])[0]
+                if volume_sma and volume_sma > 0:
+                    volume_ratio = data.volume[0] / volume_sma
+
             should_exit, exit_type = self.risk_manager.check_exit_signals(
-                data._name, data.close[0]
+                data._name, data.close[0], rsi, volume_ratio
             )
+            
+            # 如果触发止盈，设置冷却时间
+            if should_exit and exit_type == 'take_profit':
+                self.risk_manager.cooling_stocks[data._name]['exit_time'] = self.datas[0].datetime.datetime(0)
 
             if should_exit:
                 self.log(f"{exit_type.upper()} 触发: {data._name}")
@@ -134,7 +156,6 @@ class BaseStrategy(bt.Strategy):
 
     def next(self):
         """主要的策略逻辑应该在子类中实现"""
-        # 每天开始时重置风险管理器的当日已使用资金
         self.risk_manager.reset_daily_cash()
         # 检查止盈止损信号
         self.check_exit_signals()
@@ -147,16 +168,17 @@ class BaseStrategy(bt.Strategy):
         """卖出持仓"""
         position = self.getposition(data)
         if not position.size:
-            return
+            return 0
 
         # 如果该标的已经在当前bar执行过卖出操作，则跳过
         if data._name in self.orders and self.orders[data._name] is not None:
-            return
+            print(f"Warning, {data._name} has already been sold in this bar")
+            return 0
 
         # 一次性清空所有仓位
         sell_size = position.size
         self.orders[data._name] = self.sell(data=data, size=sell_size)
-        self.log(f"卖出: {data._name}, 数量: {sell_size}")
+        return sell_size
 
     def stop(self):
         """策略结束时调用"""
