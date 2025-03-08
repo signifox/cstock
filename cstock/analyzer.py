@@ -40,3 +40,29 @@ class Analyzer:
         print("\n出场类型统计:")
         for exit_type, count in self.analysis['出场类型统计'].items():
             print(f"{exit_type}: {count}次")
+            
+        print("\n个股交易统计:")
+        # 创建个股统计数据的DataFrame
+        stock_data = []
+        for symbol, stats in self.analysis['stock_statistics'].items():
+            stock_data.append({
+                '股票代码': symbol,
+                '最大回撤(%)': self.analysis['个股最大回撤'][symbol],
+                '交易次数': stats['total_trades'],
+                '盈利交易': stats['winning_trades'],
+                '亏损交易': stats['losing_trades'],
+                '胜率(%)': stats['win_rate'],
+                '总盈亏': stats['total_pnl'],
+                '最大盈利': stats['max_profit'],
+                '最大亏损': stats['max_loss'],
+                '总手续费': stats['total_commission']
+            })
+        
+        # 创建DataFrame并设置显示格式
+        df = pd.DataFrame(stock_data)
+        pd.set_option('display.float_format', lambda x: '%.2f' % x)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        
+        # 打印表格
+        print(df.to_string(index=False))

@@ -116,6 +116,14 @@ class BacktestEngine:
         # 获取OrderMetric统计数据
         order_metrics = self.strategy_instance.order_metric.get_metrics()
 
+        # 获取每只股票的最大回撤
+        stock_drawdowns = {}
+        for (
+            symbol,
+            metrics,
+        ) in self.strategy_instance.order_metric.stock_metrics.items():
+            stock_drawdowns[symbol] = metrics["max_drawdown"]
+
         # 整理投资组合分析结果
         analysis = {
             "总收益率": total_return,
@@ -132,12 +140,17 @@ class BacktestEngine:
             "平均持仓天数": order_metrics["avg_holding_period"],
             "总手续费": order_metrics["total_commission"],
             "出场类型统计": order_metrics["exit_types"],
+            "个股最大回撤": stock_drawdowns,
+            "stock_statistics": order_metrics["stock_statistics"],
         }
 
         return analysis
 
     def _get_trade_stats(self, trade_analyzer):
         """获取交易统计数据"""
+        if not trade_analyzer:
+            return {"total": 0, "won": 0, "lost": 0, "win_rate": 0.0}
+
         total = getattr(trade_analyzer, "total", None)
         total_trades = total.total if total else 0
 
