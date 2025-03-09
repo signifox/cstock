@@ -4,8 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 from cstock import config
-
-
+from cstock.analyzers.sharpe_ratio import SharpRatioClass
 class BacktestEngine:
     def __init__(
         self,
@@ -52,7 +51,7 @@ class BacktestEngine:
         cerebro.addstrategy(self.strategy_class, **self.strategy_params)
 
         # 添加分析器
-        cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name="sharpe")
+        cerebro.addanalyzer(SharpRatioClass, _name="sharpe")
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trade")
 
         self.cerebro = cerebro

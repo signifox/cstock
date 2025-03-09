@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from datetime import datetime
 
+import akshare as ak
+
 
 class Analyzer:
     def __init__(self, backtest_engine):
