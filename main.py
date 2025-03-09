@@ -3,7 +3,6 @@ from cstock.data_fetcher import DataFetcher
 from cstock.strategies.sma_crossover import SMACrossoverStrategy
 from cstock.analyzer import Analyzer
 from cstock.backtest_engine import BacktestEngine
-from cstock.visualizer import Visualizer
 from cstock.config import config
 
 
@@ -33,16 +32,6 @@ def main():
     # 创建分析器并打印结果摘要
     analyzer = Analyzer(engine)
     analyzer.print_summary()
-    
-    # 使用finplot可视化回测结果
-    visualizer = Visualizer(engine)
-    
-    # 绘制投资组合分析图表
-    visualizer.plot_portfolio()
-    
-    # 绘制每只股票的K线图和交易信号
-    for symbol in data_dict.keys():
-        visualizer.plot_single_stock(symbol)
 
 
 if __name__ == "__main__":
