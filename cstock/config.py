@@ -15,11 +15,11 @@ class Config:
         # 股票池配置
         self.STOCK_LIST = [
             "AAPL",  # 苹果
-            "MSFT",  # 微软
-            "AMZN",  # 亚马逊
-            "GOOGL",  # 谷歌
-            "TSLA",  # 特斯拉
-            "META",  # Meta(Facebook)
+            # "MSFT",  # 微软
+            # "AMZN",  # 亚马逊
+            # "GOOGL",  # 谷歌
+            # "TSLA",  # 特斯拉
+            # "META",  # Meta(Facebook)
         ]
 
         # 策略参数

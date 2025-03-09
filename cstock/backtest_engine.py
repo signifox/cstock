@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from cstock import config
 from cstock.analyzers.sharpe_ratio import SharpRatioClass
+from cstock.visualizer import Visualizer
+
 class BacktestEngine:
     def __init__(
         self,
@@ -184,3 +186,25 @@ class BacktestEngine:
                 max_drawdown = max(max_drawdown, drawdown)
 
         return max_drawdown
+        
+    def plot(self, plot_portfolio=True, plot_stocks=True):
+        """使用finplot可视化回测结果
+        
+        参数:
+            plot_portfolio (bool): 是否绘制投资组合分析图表
+            plot_stocks (bool): 是否绘制每只股票的K线图和交易信号
+        """
+        if not hasattr(self, "strategy_instance"):
+            raise ValueError("请先运行回测")
+            
+        # 创建可视化器
+        visualizer = Visualizer(self)
+        
+        # 绘制投资组合分析图表
+        if plot_portfolio:
+            visualizer.plot_portfolio()
+        
+        # 绘制每只股票的K线图和交易信号
+        if plot_stocks:
+            for symbol in self.data_dict.keys():
+                visualizer.plot_single_stock(symbol)
