@@ -138,10 +138,6 @@ class BaseStrategy(bt.Strategy):
                 data._name, data.close[0], rsi, volume_ratio
             )
             
-            # 如果触发止盈，设置冷却时间
-            if should_exit and exit_type == 'take_profit':
-                self.risk_manager.cooling_stocks[data._name]['exit_time'] = self.datas[0].datetime.datetime(0)
-
             if should_exit:
                 self.log(f"{exit_type.upper()} 触发: {data._name}")
                 # 记录交易出场
