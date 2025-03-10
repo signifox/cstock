@@ -124,18 +124,14 @@ class BaseStrategy(bt.Strategy):
                 continue
 
             # 检查是否触发止盈止损
-            # 获取当前RSI值和成交量比率
+            # 获取当前RSI值
             indicators = getattr(self, 'indicators', {})
             rsi = None
-            volume_ratio = None
             if data._name in indicators:
                 rsi = indicators[data._name].get('rsi', [None])[0]
-                volume_sma = indicators[data._name].get('volume_sma', [None])[0]
-                if volume_sma and volume_sma > 0:
-                    volume_ratio = data.volume[0] / volume_sma
 
             should_exit, exit_type = self.risk_manager.check_exit_signals(
-                data._name, data.close[0], rsi, volume_ratio
+                data._name, data.close[0], rsi
             )
             
             if should_exit:

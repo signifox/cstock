@@ -34,8 +34,6 @@ class OrderMetric:
         self.max_loss = 0.0  # 最大单笔亏损
         self.total_commission = 0.0  # 总手续费
         
-        # 单只股票回撤统计
-        self.stock_metrics: Dict[str, Dict] = {}  # 每只股票的度量数据
         # 单只股票统计数据
         self.stock_stats: Dict[str, Dict] = {}  # 每只股票的统计数据
         
@@ -59,39 +57,12 @@ class OrderMetric:
             commission=commission
         )
         self.active_trades[symbol] = trade
-        
-        # 初始化或更新股票度量数据
-        if symbol not in self.stock_metrics:
-            self.stock_metrics[symbol] = {
-                'highest_value': entry_price * size,
-                'max_drawdown': 0.0,
-                'current_drawdown': 0.0
-            }
 
     def on_trade_exit(self, symbol: str, exit_time: datetime, exit_price: float,
                      commission: float, exit_type: str = 'signal'):
         """记录交易出场"""
         if symbol not in self.active_trades:
             return
-            
-        # 更新股票回撤数据
-        if symbol in self.stock_metrics:
-            current_value = exit_price * self.active_trades[symbol].size
-            metrics = self.stock_metrics[symbol]
-            
-            # 只在持仓期间更新最高价值
-            metrics['highest_value'] = max(metrics['highest_value'], current_value)
-            
-            if metrics['highest_value'] > 0:
-                current_drawdown = ((metrics['highest_value'] - current_value) / metrics['highest_value']) * 100
-                metrics['current_drawdown'] = current_drawdown
-                metrics['max_drawdown'] = max(metrics['max_drawdown'], current_drawdown)
-                
-                # 回撤数据已记录到metrics中，无需额外打印
-            
-            # 清仓时重置最高价值，为下次建仓做准备
-            metrics['highest_value'] = 0.0
-            metrics['current_drawdown'] = 0.0
 
         trade = self.active_trades[symbol]
         trade.exit_time = exit_time
@@ -161,20 +132,11 @@ class OrderMetric:
                 'total_trades': 0,
                 'win_rate': 0.0,
                 'profit_factor': 0.0,
-                'avg_holding_period': 0.0,
-                'stock_drawdowns': {}
+                'avg_holding_period': 0.0
             }
 
         win_rate = (self.winning_trades / self.total_trades) * 100
         avg_holding_period = sum(self.holding_periods) / len(self.holding_periods)
-
-        # 整理每只股票的回撤数据
-        stock_drawdowns = {}
-        for symbol, metrics in self.stock_metrics.items():
-            stock_drawdowns[symbol] = {
-                'max_drawdown': metrics['max_drawdown'],
-                'current_drawdown': metrics['current_drawdown']
-            }
 
         # 整理每只股票的统计数据
         stock_statistics = {}
@@ -203,6 +165,5 @@ class OrderMetric:
             'total_commission': self.total_commission,
             'avg_holding_period': avg_holding_period,
             'exit_types': self.exit_types,
-            'stock_drawdowns': stock_drawdowns,
             'stock_statistics': stock_statistics
         }

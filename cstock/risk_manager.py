@@ -19,7 +19,6 @@ class RiskManager:
         
         # 动态止盈参数
         self.rsi_threshold = 70  # RSI超买阈值
-        self.volume_mult_threshold = 1.5  # 成交量放大倍数阈值
         self.trend_bonus = 0.1  # 强势趋势额外止盈加成（10%）
 
     def reset_daily_cash(self):
@@ -89,10 +88,7 @@ class RiskManager:
             if rsi > self.rsi_threshold:
                 trend_strength += 1
                 
-            # 成交量显著放大
-            if volume_ratio > self.volume_mult_threshold:
-                trend_strength += 1
-                
+
             # 根据趋势强度增加止盈目标
             take_profit_pct += trend_strength * self.trend_bonus
             

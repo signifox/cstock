@@ -10,7 +10,6 @@ class SMACrossoverStrategy(BaseStrategy):
         ("rsi_period", 14),  # RSI指标周期
         ("rsi_upper", 70),  # RSI超买阈值
         ("rsi_lower", 30),  # RSI超卖阈值
-        ("volume_mult", 1.5),  # 成交量放大倍数阈值
     )
 
     def __init__(self):
@@ -30,15 +29,11 @@ class SMACrossoverStrategy(BaseStrategy):
             # RSI指标
             rsi = bt.indicators.RSI(data.close, period=self.params.rsi_period)
 
-            # 成交量均线
-            volume_sma = bt.indicators.SimpleMovingAverage(data.volume, period=20)
-
             self.indicators[data._name] = {
                 "sma_short": sma_short,
                 "sma_long": sma_long,
                 "crossover": crossover,
                 "rsi": rsi,
-                "volume_sma": volume_sma,
             }
 
     def next(self):
