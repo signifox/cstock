@@ -1,5 +1,6 @@
 import backtrader as bt
 from cstock.risk_manager import RiskManager
+from cstock.single_stock_analyzer import SingleStockAnalyzer
 
 
 class BaseStrategy(bt.Strategy):
@@ -23,6 +24,11 @@ class BaseStrategy(bt.Strategy):
             take_profit_pct=self.params.take_profit_pct,
             max_position_size=self.params.max_position_size,
         )
+
+        # 初始化每个数据源的分析器
+        self.stock_analyzers = {}
+        for data in self.datas:
+            self.stock_analyzers[data._name] = SingleStockAnalyzer(data._name)
 
     def log(self, txt, dt=None):
         """记录策略信息"""
@@ -83,6 +89,10 @@ class BaseStrategy(bt.Strategy):
             f"净利润: {trade.pnlcomm:.2f}"
         )
 
+        # 更新股票分析器
+        if trade.data._name in self.stock_analyzers:
+            self.stock_analyzers[trade.data._name].update_trade(trade)
+
     def get_position_size(self, data):
         """计算建仓数量，使用风险管理器进行仓位管理"""
         return self.risk_manager.get_position_size(data, self.broker)
@@ -115,6 +125,16 @@ class BaseStrategy(bt.Strategy):
         # 检查止盈止损信号
         self.check_exit_signals()
 
+        # 更新每只股票的市值
+        for data in self.datas:
+            position = self.getposition(data)
+            if data._name in self.stock_analyzers:
+                self.stock_analyzers[data._name].update_value(
+                    position.size,
+                    data.close[0],
+                    data.datetime.datetime(0)
+                )
+
     def start(self):
         """策略开始时调用"""
         self.log("策略启动")
@@ -138,3 +158,6 @@ class BaseStrategy(bt.Strategy):
     def stop(self):
         """策略结束时调用"""
         self.log("策略结束")
+
+        # 使用统一的表格格式打印所有股票的统计信息
+        SingleStockAnalyzer.print_all_summaries(self.stock_analyzers.values())
