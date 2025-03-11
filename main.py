@@ -27,7 +27,7 @@ def main():
     )
 
     # 运行回测
-    results = engine.run_backtest()
+    engine.run_backtest()
 
     # 创建分析器并打印结果摘要
     analyzer = Analyzer(engine)

@@ -52,7 +52,7 @@ class BacktestEngine:
         # 添加策略
         cerebro.addstrategy(self.strategy_class, **self.strategy_params)
 
-        # 设置无风险利率（年化利率，例如3%）
+        # 设置无风险利率（年化利率，例如4%）
         risk_free_rate = 0.04  # 年化无风险利率
         # 添加 SharpeRatio 分析器并传入自定义参数
         cerebro.addanalyzer(
@@ -65,9 +65,19 @@ class BacktestEngine:
         )
 
         # 添加分析器
-        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trade")
+        cerebro.addanalyzer(
+            bt.analyzers.TradeAnalyzer,
+            _name="trade"
+        )
         # 添加回撤分析器
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
+        # 添加收益率分析器
+        cerebro.addanalyzer(
+            bt.analyzers.Returns,
+            _name="returns",
+            timeframe=bt.TimeFrame.Days,
+            tann=252  # 年化因子
+        )
 
         self.cerebro = cerebro
         return cerebro

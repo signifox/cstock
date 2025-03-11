@@ -1,6 +1,5 @@
 import backtrader as bt
 from cstock.risk_manager import RiskManager
-from cstock.order_metric import OrderMetric
 
 
 class BaseStrategy(bt.Strategy):
@@ -17,8 +16,6 @@ class BaseStrategy(bt.Strategy):
     def __init__(self):
         # 记录订单
         self.orders = {}
-        # 记录持仓状态
-        self.position_status = {}
 
         # 初始化风险管理器
         self.risk_manager = RiskManager(
@@ -26,9 +23,6 @@ class BaseStrategy(bt.Strategy):
             take_profit_pct=self.params.take_profit_pct,
             max_position_size=self.params.max_position_size,
         )
-
-        # 初始化订单度量统计
-        self.order_metric = OrderMetric()
 
     def log(self, txt, dt=None):
         """记录策略信息"""
@@ -51,15 +45,7 @@ class BaseStrategy(bt.Strategy):
                 )
                 # 添加新持仓到风险管理器
                 self.risk_manager.add_position(order.data._name, order.executed.price)
-                # 记录交易入场
-                self.order_metric.on_trade_entry(
-                    symbol=order.data._name,
-                    entry_time=self.datas[0].datetime.datetime(0),
-                    entry_price=order.executed.price,
-                    size=order.executed.size,
-                    direction="buy",
-                    commission=order.executed.comm,
-                )
+
             else:  # 卖出订单
                 if position.size < 0:
                     self.log(f"警告：{order.data._name} 出现负持仓，尝试修正")
@@ -73,14 +59,6 @@ class BaseStrategy(bt.Strategy):
                 )
                 # 从风险管理器中移除持仓
                 self.risk_manager.remove_position(order.data._name)
-                # 记录交易出场
-                self.order_metric.on_trade_exit(
-                    symbol=order.data._name,
-                    exit_time=self.datas[0].datetime.datetime(0),
-                    exit_price=order.executed.price,
-                    commission=order.executed.comm,
-                    exit_type="signal",
-                )
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             error_type = {
@@ -92,8 +70,6 @@ class BaseStrategy(bt.Strategy):
             if hasattr(order, "info") and order.info:
                 error_detail += f", 原因: {order.info}"
             self.log(error_detail)
-            # 记录失败的交易
-            self.position_status[order.data._name] = "lost"
 
         self.orders[order.data._name] = None
 
@@ -101,12 +77,6 @@ class BaseStrategy(bt.Strategy):
         """交易状态更新通知"""
         if not trade.isclosed:
             return
-
-        # 更新交易状态
-        if trade.pnl >= 0:
-            self.position_status[trade.data._name] = "won"
-        else:
-            self.position_status[trade.data._name] = "lost"
 
         self.log(
             f"交易利润: {trade.data._name}, 毛利润: {trade.pnl:.2f}, "
@@ -125,25 +95,18 @@ class BaseStrategy(bt.Strategy):
 
             # 检查是否触发止盈止损
             # 获取当前RSI值
-            indicators = getattr(self, 'indicators', {})
+            indicators = getattr(self, "indicators", {})
             rsi = None
             if data._name in indicators:
-                rsi = indicators[data._name].get('rsi', [None])[0]
+                rsi = indicators[data._name].get("rsi", [None])[0]
 
             should_exit, exit_type = self.risk_manager.check_exit_signals(
                 data._name, data.close[0], rsi
             )
-            
+
             if should_exit:
                 self.log(f"{exit_type.upper()} 触发: {data._name}")
-                # 记录交易出场
-                self.order_metric.on_trade_exit(
-                    symbol=data._name,
-                    exit_time=self.datas[0].datetime.datetime(0),
-                    exit_price=data.close[0],
-                    commission=0.0,  # 手续费将在notify_order中更新
-                    exit_type=exit_type,
-                )
+
                 self.sell_position(data)
 
     def next(self):
