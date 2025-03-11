@@ -16,17 +16,11 @@ class Config:
         self.STOCK_LIST = [
             "AAPL",  # 苹果
             "MSFT",  # 微软
-            # "AMZN",  # 亚马逊
+            "AMZN",  # 亚马逊
             # "GOOGL",  # 谷歌
             # "TSLA",  # 特斯拉
             # "META",  # Meta(Facebook)
         ]
-
-        # 策略参数
-        self.STRATEGY_PARAMS = {
-            "sma_period_short": 5,
-            "sma_period_long": 10,
-        }
 
 
 # 创建全局配置实例
@@ -39,4 +33,3 @@ END_DATE = config.END_DATE
 INITIAL_CASH = config.INITIAL_CASH
 COMMISSION_RATE = config.COMMISSION_RATE
 STOCK_LIST = config.STOCK_LIST
-STRATEGY_PARAMS = config.STRATEGY_PARAMS

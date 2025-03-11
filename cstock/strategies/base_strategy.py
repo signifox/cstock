@@ -125,16 +125,6 @@ class BaseStrategy(bt.Strategy):
         # 检查止盈止损信号
         self.check_exit_signals()
 
-        # 更新每只股票的市值
-        for data in self.datas:
-            position = self.getposition(data)
-            if data._name in self.stock_analyzers:
-                self.stock_analyzers[data._name].update_value(
-                    position.size,
-                    data.close[0],
-                    data.datetime.datetime(0)
-                )
-
     def start(self):
         """策略开始时调用"""
         self.log("策略启动")

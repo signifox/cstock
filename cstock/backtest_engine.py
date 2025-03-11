@@ -40,13 +40,11 @@ class BacktestEngine:
             # 转换为backtrader的数据格式
             data_feed = bt.feeds.PandasData(dataname=data, name=symbol)
             cerebro.adddata(data_feed)
-            # 为每只股票单独添加DrawDown分析器
-            cerebro.addanalyzer(bt.analyzers.DrawDown, _name=f"drawdown_{symbol}")
 
         # 设置初始资金
         cerebro.broker.setcash(self.initial_cash)
 
-        # 设置手续费
+        # 设置手续费（百分比模式）
         cerebro.broker.setcommission(commission=self.commission)
 
         # 添加策略
@@ -65,10 +63,7 @@ class BacktestEngine:
         )
 
         # 添加分析器
-        cerebro.addanalyzer(
-            bt.analyzers.TradeAnalyzer,
-            _name="trade"
-        )
+        cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trade")
         # 添加回撤分析器
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
         # 添加收益率分析器
@@ -76,7 +71,7 @@ class BacktestEngine:
             bt.analyzers.Returns,
             _name="returns",
             timeframe=bt.TimeFrame.Days,
-            tann=252  # 年化因子
+            tann=252,  # 年化因子
         )
 
         self.cerebro = cerebro
@@ -92,5 +87,4 @@ class BacktestEngine:
         # 保存策略实例
         self.strategy_instance = results[0]
 
-        # self.cerebro.plot(style="candlestick")  # 画图
         return results

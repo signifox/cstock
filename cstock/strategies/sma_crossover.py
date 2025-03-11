@@ -5,8 +5,8 @@ from cstock.strategies.base_strategy import BaseStrategy
 
 class SMACrossoverStrategy(BaseStrategy):
     params = (
-        ("sma_period_short", config.STRATEGY_PARAMS["sma_period_short"]),
-        ("sma_period_long", config.STRATEGY_PARAMS["sma_period_long"]),
+        ("sma_period_short", 5),
+        ("sma_period_long", 10),
         ("rsi_period", 14),  # RSI指标周期
         ("rsi_upper", 70),  # RSI超买阈值
         ("rsi_lower", 30),  # RSI超卖阈值

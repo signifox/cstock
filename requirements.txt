@@ -1,0 +1,5 @@
+akshare==1.12.15
+backtrader==1.9.78.123
+pandas==2.1.4
+numpy==1.26.2
+matplotlib==3.8.2
