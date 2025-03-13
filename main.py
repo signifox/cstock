@@ -6,6 +6,7 @@ from cstock.config import config
 
 from cstock.strategies.macd_rsi_strategy import MACDRSIStrategy
 from cstock.strategies.sma_crossover import SMACrossoverStrategy
+from cstock.strategies.dual_thrust_strategy import DualThrustStrategy
 
 
 def main():
@@ -22,7 +23,7 @@ def main():
     # 初始化回测引擎
     engine = BacktestEngine(
         data_dict=data_dict,
-        strategy_class=MACDRSIStrategy,
+        strategy_class=DualThrustStrategy,
         initial_cash=config.INITIAL_CASH,
         commission=config.COMMISSION_RATE,
     )
@@ -33,7 +34,7 @@ def main():
     # 创建分析器并打印结果摘要
     analyzer = Analyzer(engine)
     analyzer.print_summary()
-    
+
     # 绘制回测结果图表
     analyzer.plot_results()
 
