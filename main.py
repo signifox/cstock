@@ -7,6 +7,7 @@ from cstock.config import config
 from cstock.strategies.macd_rsi_strategy import MACDRSIStrategy
 from cstock.strategies.sma_crossover import SMACrossoverStrategy
 from cstock.strategies.dual_thrust_strategy import DualThrustStrategy
+from cstock.strategies.dca_strategy import DCAStrategy
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
     # 初始化回测引擎
     engine = BacktestEngine(
         data_dict=data_dict,
-        strategy_class=DualThrustStrategy,
+        strategy_class=DCAStrategy,
         initial_cash=config.INITIAL_CASH,
         commission=config.COMMISSION_RATE,
     )
