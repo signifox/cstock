@@ -7,9 +7,9 @@ class SMACrossoverStrategy(BaseStrategy):
     params = (
         ("sma_period_short", 5),
         ("sma_period_long", 10),
-        ("rsi_period", 14),  # RSI指标周期
-        ("rsi_upper", 70),  # RSI超买阈值
-        ("rsi_lower", 30),  # RSI超卖阈值
+        ("rsi_period", 14),  # RSI Period
+        ("rsi_upper", 70),  # RSI Overbought Threshold
+        ("rsi_lower", 30),  # RSI Oversold Threshold
     )
 
     def __init__(self):
@@ -17,7 +17,7 @@ class SMACrossoverStrategy(BaseStrategy):
 
         self.indicators = {}
         for data in self.datas:
-            # 均线指标
+            # Moving Average Indicators
             sma_short = bt.indicators.SimpleMovingAverage(
                 data.close, period=self.params.sma_period_short
             )
@@ -26,7 +26,7 @@ class SMACrossoverStrategy(BaseStrategy):
             )
             crossover = bt.indicators.CrossOver(sma_short, sma_long)
 
-            # RSI指标
+            # RSI Indicator
             rsi = bt.indicators.RSI(data.close, period=self.params.rsi_period)
 
             self.indicators[data._name] = {
@@ -49,15 +49,15 @@ class SMACrossoverStrategy(BaseStrategy):
             crossover = indicators["crossover"][0]
             rsi = indicators["rsi"][0]
 
-            # 检查是否满足买入条件
+            # Check buy conditions
             if not self.getposition(data).size and sma_short > sma_long:
-                # 计算建仓数量
+                # Calculate position size
                 size = self.get_position_size(data)
                 if size > 0:
                     self.orders[data._name] = self.buy(data=data, size=size)
-                    self.log(f"买入{data._name}, 价格: {data.close[0]}, 数量: {size}")
+                    self.log(f"Buy {data._name}, Price: {data.close[0]}, Size: {size}")
 
-            # 检查是否满足卖出条件
+            # Check sell conditions
             elif self.getposition(data).size and sma_short < sma_long:
                 size = self.sell_position(data)
-                self.log(f"卖出{data._name}, 价格: {data.close[0]},数量: {size}")
+                self.log(f"Sell {data._name}, Price: {data.close[0]}, Size: {size}")

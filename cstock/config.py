@@ -1,32 +1,32 @@
-# 配置文件
+# Configuration File
 
 
 class Config:
     def __init__(self):
-        # 数据相关配置
+        # Data Configuration
         self.DATA_DIR = "data"
         self.START_DATE = "2022-06-01"
         self.END_DATE = "2024-12-31"
 
-        # 回测相关配置
-        self.INITIAL_CASH = 100000  # 初始资金
-        self.COMMISSION_RATE = 0.001  # 手续费率
+        # Backtest Configuration
+        self.INITIAL_CASH = 100000  # Initial Capital
+        self.COMMISSION_RATE = 0.001  # Commission Rate
 
-        # 股票池配置
+        # Stock Pool Configuration
         self.STOCK_LIST = [
-            # "AAPL",  # 苹果
-            # "MSFT",  # 微软
-            # "AMZN",  # 亚马逊
-            # "GOOGL",  # 谷歌
-            "TSLA",  # 特斯拉
-            # "META",  # Meta(Facebook)
+            # "AAPL",  # Apple Inc.
+            # "MSFT",  # Microsoft Corporation
+            # "AMZN",  # Amazon.com Inc.
+            # "GOOGL",  # Alphabet Inc.
+            "TSLA",  # Tesla Inc.
+            # "META",  # Meta Platforms Inc.
         ]
 
 
-# 创建全局配置实例
+# Create global configuration instance
 config = Config()
 
-# 导出全局变量，保持向后兼容性
+# Export global variables for backward compatibility
 DATA_DIR = config.DATA_DIR
 START_DATE = config.START_DATE
 END_DATE = config.END_DATE

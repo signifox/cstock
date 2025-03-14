@@ -4,39 +4,39 @@ from cstock.single_stock_analyzer import SingleStockAnalyzer
 
 
 class BaseStrategy(bt.Strategy):
-    """策略基类，提供通用的功能和辅助方法
-    所有自定义策略都应该继承这个基类
+    """Base strategy class providing common functionality and helper methods.
+    All custom strategies should inherit from this base class.
     """
 
     params = (
-        ("max_position_size", 0.3),  # 最大仓位比例
-        ("stop_loss_pct", 0.1),  # 止损比例
-        ("take_profit_pct", 0.2),  # 止盈比例
+        ("max_position_size", 0.3),  # Maximum position size ratio
+        ("stop_loss_pct", 0.1),  # Stop loss percentage
+        ("take_profit_pct", 0.2),  # Take profit percentage
     )
 
     def __init__(self):
-        # 记录订单
+        # Track orders
         self.orders = {}
 
-        # 初始化风险管理器
+        # Initialize risk manager
         self.risk_manager = RiskManager(
             stop_loss_pct=self.params.stop_loss_pct,
             take_profit_pct=self.params.take_profit_pct,
             max_position_size=self.params.max_position_size,
         )
 
-        # 初始化每个数据源的分析器
+        # Initialize analyzer for each data source
         self.stock_analyzers = {}
         for data in self.datas:
             self.stock_analyzers[data._name] = SingleStockAnalyzer(data._name)
 
     def log(self, txt, dt=None):
-        """记录策略信息"""
+        """Log strategy information"""
         dt = dt or self.datas[0].datetime.date(0)
         print(f"{dt.isoformat()}, {txt}")
 
     def notify_order(self, order):
-        """订单状态更新通知"""
+        """Order status update notification"""
         if order.status in [order.Submitted, order.Accepted]:
             return
 
@@ -45,66 +45,68 @@ class BaseStrategy(bt.Strategy):
 
             if order.isbuy():
                 self.log(
-                    f"买入执行: {order.data._name}, 价格: {order.executed.price:.2f}, "
-                    f"数量: {order.executed.size}, 金额: {order.executed.value:.2f}, "
-                    f"手续费: {order.executed.comm:.2f}"
+                    f"BUY EXECUTED: {order.data._name}, Price: {order.executed.price:.2f}, "
+                    f"Size: {order.executed.size}, Value: {order.executed.value:.2f}, "
+                    f"Commission: {order.executed.comm:.2f}"
                 )
-                # 添加新持仓到风险管理器
+                # Add new position to risk manager
                 self.risk_manager.add_position(order.data._name, order.executed.price)
 
-            else:  # 卖出订单
+            else:  # Sell order
                 if position.size < 0:
-                    self.log(f"警告：{order.data._name} 出现负持仓，尝试修正")
+                    self.log(
+                        f"WARNING: {order.data._name} has negative position, attempting to fix"
+                    )
                     self.cancel(order)
                     return
 
                 self.log(
-                    f"卖出执行: {order.data._name}, 价格: {order.executed.price:.2f}, "
-                    f"数量: {order.executed.size}, 金额: {abs(order.executed.value):.2f}, "
-                    f"手续费: {order.executed.comm:.2f}"
+                    f"SELL EXECUTED: {order.data._name}, Price: {order.executed.price:.2f}, "
+                    f"Size: {order.executed.size}, Value: {abs(order.executed.value):.2f}, "
+                    f"Commission: {order.executed.comm:.2f}"
                 )
-                # 从风险管理器中移除持仓
+                # Remove position from risk manager
                 self.risk_manager.remove_position(order.data._name)
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             error_type = {
-                order.Canceled: "订单取消",
-                order.Margin: "保证金不足",
-                order.Rejected: "订单被拒绝",
+                order.Canceled: "Order Canceled",
+                order.Margin: "Margin Insufficient",
+                order.Rejected: "Order Rejected",
             }.get(order.status)
             error_detail = f"{error_type}: {order.data._name}"
             if hasattr(order, "info") and order.info:
-                error_detail += f", 原因: {order.info}"
+                error_detail += f", Reason: {order.info}"
             self.log(error_detail)
 
         self.orders[order.data._name] = None
 
     def notify_trade(self, trade):
-        """交易状态更新通知"""
+        """Trade status update notification"""
         if not trade.isclosed:
             return
 
         self.log(
-            f"交易利润: {trade.data._name}, 毛利润: {trade.pnl:.2f}, "
-            f"净利润: {trade.pnlcomm:.2f}"
+            f"TRADE PROFIT: {trade.data._name}, Gross: {trade.pnl:.2f}, "
+            f"Net: {trade.pnlcomm:.2f}"
         )
 
-        # 更新股票分析器
+        # Update stock analyzer
         if trade.data._name in self.stock_analyzers:
             self.stock_analyzers[trade.data._name].update_trade(trade)
 
     def get_position_size(self, data):
-        """计算建仓数量，使用风险管理器进行仓位管理"""
+        """Calculate position size using risk manager for position management"""
         return self.risk_manager.get_position_size(data, self.broker)
 
     def check_exit_signals(self):
-        """检查是否需要退出仓位"""
+        """Check if positions need to be exited"""
         for data in self.datas:
             if not self.getposition(data).size:
                 continue
 
-            # 检查是否触发止盈止损
-            # 获取当前RSI值
+            # Check if stop loss or take profit is triggered
+            # Get current RSI value
             indicators = getattr(self, "indicators", {})
             rsi = None
             if data._name in indicators:
@@ -115,39 +117,38 @@ class BaseStrategy(bt.Strategy):
             )
 
             if should_exit:
-                self.log(f"{exit_type.upper()} 触发: {data._name}")
-
+                self.log(f"{exit_type.upper()} TRIGGERED: {data._name}")
                 self.sell_position(data)
 
     def next(self):
-        """主要的策略逻辑应该在子类中实现"""
+        """Main strategy logic should be implemented in subclasses"""
         self.risk_manager.reset_daily_cash()
-        # 检查止盈止损信号
+        # Check stop loss and take profit signals
         self.check_exit_signals()
 
     def start(self):
-        """策略开始时调用"""
-        self.log("策略启动")
+        """Called when strategy starts"""
+        self.log("Strategy Started")
 
     def sell_position(self, data):
-        """卖出持仓"""
+        """Sell position"""
         position = self.getposition(data)
         if not position.size:
             return 0
 
-        # 如果该标的已经在当前bar执行过卖出操作，则跳过
+        # Skip if the symbol has already executed a sell operation in current bar
         if data._name in self.orders and self.orders[data._name] is not None:
             print(f"Warning, {data._name} has already been sold in this bar")
             return 0
 
-        # 一次性清空所有仓位
+        # Clear all positions at once
         sell_size = position.size
         self.orders[data._name] = self.sell(data=data, size=sell_size)
         return sell_size
 
     def stop(self):
-        """策略结束时调用"""
-        self.log("策略结束")
+        """Called when strategy ends"""
+        self.log("Strategy Ended")
 
-        # 使用统一的表格格式打印所有股票的统计信息
+        # Print statistics for all stocks using unified table format
         SingleStockAnalyzer.print_all_summaries(self.stock_analyzers.values())

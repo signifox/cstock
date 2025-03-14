@@ -18,41 +18,41 @@ class DataFetcher:
         force_update=False,
     ):
         """
-        获取美股历史数据并保存到本地
+        Fetch historical stock data
 
-        参数:
-            symbol (str): 股票代码
-            start_date (str): 开始日期，格式：YYYY-MM-DD
-            end_date (str): 结束日期，格式：YYYY-MM-DD
-            force_update (bool): 是否强制更新数据
+        Parameters:
+            symbol (str): Stock symbol
+            start_date (str): Start date in YYYY-MM-DD format
+            end_date (str): End date in YYYY-MM-DD format
+            force_update (bool): Whether to force update data
 
-        返回:
-            pandas.DataFrame: 股票历史数据
+        Returns:
+            pandas.DataFrame: Historical stock data
         """
         file_path = os.path.join(self.data_dir, f"{symbol}.csv")
 
-        # 如果文件存在且不强制更新，则直接读取本地文件
+        # Load from local file if exists and not force update
         if os.path.exists(file_path) and not force_update:
-            print(f"从本地加载 {symbol} 的数据")
+            print(f"Loading {symbol} data from local file")
             return pd.read_csv(file_path, index_col=0, parse_dates=True)
 
-        print(f"从AKShare获取 {symbol} 的数据")
+        print(f"Fetching {symbol} data from AKShare")
         try:
-            # 使用akshare获取美股数据
+            # Get US stock data using akshare
             stock_data = ak.stock_us_daily(symbol=symbol, adjust="qfq")
 
-            # 处理日期格式
+            # Convert date to datetime
             stock_data["date"] = pd.to_datetime(stock_data["date"])
             stock_data = stock_data.set_index("date")
 
-            # 筛选日期范围
+            # Filter data by date range
             start_date = pd.to_datetime(start_date)
             end_date = pd.to_datetime(end_date)
             stock_data = stock_data[
                 (stock_data.index >= start_date) & (stock_data.index <= end_date)
             ]
 
-            # 重命名列以适配backtrader
+            # Rename columns to match backtrader
             stock_data = stock_data.rename(
                 columns={
                     "open": "Open",
@@ -63,13 +63,13 @@ class DataFetcher:
                 }
             )
 
-            # 保存到本地
+            # Save to local file
             stock_data.to_csv(file_path)
 
             return stock_data
 
         except Exception as e:
-            print(f"获取 {symbol} 数据时出错: {e}")
+            print(f"Error fetching data for {symbol}: {e}")
             return None
 
     def fetch_multiple_stocks(
@@ -80,16 +80,16 @@ class DataFetcher:
         force_update=False,
     ):
         """
-        批量获取多只股票的数据
+        Fetch data for multiple stocks
 
-        参数:
-            symbols (list): 股票代码列表，默认为配置文件中的股票列表
-            start_date (str): 开始日期
-            end_date (str): 结束日期
-            force_update (bool): 是否强制更新数据
+        Parameters:
+            symbols (list): List of stock symbols, defaults to config stock list
+            start_date (str): Start date
+            end_date (str): End date
+            force_update (bool): Whether to force update data
 
-        返回:
-            dict: 股票代码到数据的映射
+        Returns:
+            dict: Mapping from stock symbols to data
         """
         if symbols is None:
             symbols = config.STOCK_LIST

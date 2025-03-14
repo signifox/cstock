@@ -1,1 +1,1 @@
-# 策略包初始化文件
+# Strategy package initialization file

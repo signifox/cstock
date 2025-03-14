@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 class SingleStockAnalyzer:
-    """单只股票分析器，用于记录和分析单只股票的交易表现"""
+    """Single stock analyzer for recording and analyzing individual stock trading performance"""
 
     def __init__(self, stock_name):
         self.stock_name = stock_name
@@ -53,60 +53,60 @@ class SingleStockAnalyzer:
         )
 
         return {
-            "股票代码": self.stock_name,
-            "总交易次数": self.total_trades,
-            "盈利次数": self.winning_trades,
-            "亏损次数": self.losing_trades,
-            "胜率": win_rate,
-            "总收益": self.total_profit,
-            "平均每笔收益": avg_profit,
-            "总手续费": self.total_commission,
-            "当前持仓": self.current_position,
+            "Symbol": self.stock_name,
+            "Total Trades": self.total_trades,
+            "Winning Trades": self.winning_trades,
+            "Losing Trades": self.losing_trades,
+            "Win Rate": win_rate,
+            "Total Profit": self.total_profit,
+            "Average Trade Profit": avg_profit,
+            "Total Commission": self.total_commission,
+            "Current Position": self.current_position,
         }
 
     @staticmethod
     def print_all_summaries(analyzers):
-        """打印所有股票的统计摘要，使用统一的表格格式
+        """Print summary statistics for all stocks in a unified table format
 
-        参数:
-            analyzers (list): SingleStockAnalyzer对象列表
+        Parameters:
+            analyzers (list): List of SingleStockAnalyzer objects
         """
         if not analyzers:
             return
 
-        # 获取所有股票的摘要数据
+        # Get summary data for all stocks
         all_summaries = [analyzer.get_summary() for analyzer in analyzers]
 
-        # 计算每个字段的最大长度，用于对齐
+        # Calculate maximum length for each field for alignment
         max_lengths = {}
         for summary in all_summaries:
             for key, value in summary.items():
                 value_str = str(value)
                 if isinstance(value, float):
-                    if "率" in key:
+                    if "Rate" in key:
                         value_str = f"{value:.2%}"
                     else:
                         value_str = f"{value:.2f}"
                 max_lengths[key] = max(max_lengths.get(key, len(key)), len(value_str))
 
-        # 打印表头
+        # Print header
         header = ""
         separator = ""
         for key in all_summaries[0].keys():
-            width = max_lengths[key] + 2  # 添加2个空格的padding
+            width = max_lengths[key] + 2  # Add 2 spaces padding
             header += f"{key:^{width}}"
             separator += "-" * width
 
         print("\n" + header)
         print(separator)
 
-        # 打印每只股票的数据行
+        # Print data row for each stock
         for summary in all_summaries:
             row = ""
             for key, value in summary.items():
-                width = max_lengths[key] + 2  # 添加2个空格的padding
+                width = max_lengths[key] + 2  # Add 2 spaces padding
                 if isinstance(value, float):
-                    if "率" in key:
+                    if "Rate" in key:
                         row += f"{value:>{width}.2%}"
                     else:
                         row += f"{value:>{width}.2f}"

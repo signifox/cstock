@@ -11,17 +11,17 @@ from cstock.strategies.dca_strategy import DCAStrategy
 
 
 def main():
-    # 初始化数据获取器
+    # Initialize data fetcher
     data_fetcher = DataFetcher()
 
-    # 获取所有股票的回测数据
+    # Fetch backtest data for all stocks
     data_dict = data_fetcher.fetch_multiple_stocks(
         symbols=config.STOCK_LIST,
         start_date=config.START_DATE,
         end_date=config.END_DATE,
     )
 
-    # 初始化回测引擎
+    # Initialize backtest engine
     engine = BacktestEngine(
         data_dict=data_dict,
         strategy_class=DCAStrategy,
@@ -29,14 +29,14 @@ def main():
         commission=config.COMMISSION_RATE,
     )
 
-    # 运行回测
+    # Run backtest
     engine.run_backtest()
 
-    # 创建分析器并打印结果摘要
+    # Create analyzer and print summary
     analyzer = Analyzer(engine)
     analyzer.print_summary()
 
-    # 绘制回测结果图表
+    # Plot backtest results
     analyzer.plot_results()
 
 

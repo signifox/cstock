@@ -4,12 +4,12 @@ from cstock.strategies.base_strategy import BaseStrategy
 
 class MACDRSIStrategy(BaseStrategy):
     params = (
-        ("macd_fast", 12),  # MACD快线周期
-        ("macd_slow", 26),  # MACD慢线周期
-        ("macd_signal", 9),  # MACD信号线周期
-        ("rsi_period", 14),  # RSI周期
-        ("rsi_upper", 70),  # RSI超买阈值
-        ("rsi_lower", 30),  # RSI超卖阈值
+        ("macd_fast", 12),  # MACD Fast Period
+        ("macd_slow", 26),  # MACD Slow Period
+        ("macd_signal", 9),  # MACD Signal Period
+        ("rsi_period", 14),  # RSI Period
+        ("rsi_upper", 70),  # RSI Overbought Threshold
+        ("rsi_lower", 30),  # RSI Oversold Threshold
     )
 
     def __init__(self):
@@ -17,7 +17,7 @@ class MACDRSIStrategy(BaseStrategy):
 
         self.indicators = {}
         for data in self.datas:
-            # MACD指标
+            # MACD Indicator
             macd = bt.indicators.MACD(
                 data.close,
                 period_me1=self.params.macd_fast,
@@ -25,7 +25,7 @@ class MACDRSIStrategy(BaseStrategy):
                 period_signal=self.params.macd_signal,
             )
 
-            # RSI指标
+            # RSI Indicator
             rsi = bt.indicators.RSI(data.close, period=self.params.rsi_period)
 
             self.indicators[data._name] = {"macd": macd, "rsi": rsi}
@@ -41,22 +41,22 @@ class MACDRSIStrategy(BaseStrategy):
             macd = indicators["macd"]
             rsi = indicators["rsi"]
 
-            # MACD金叉
+            # MACD Golden Cross
             macd_crossover = (
                 macd.macd[0] > macd.signal[0] and macd.macd[-1] <= macd.signal[-1]
             )
-            # MACD死叉
+            # MACD Death Cross
             macd_crossunder = (
                 macd.macd[0] < macd.signal[0] and macd.macd[-1] >= macd.signal[-1]
             )
 
             position = self.getposition(data)
 
-            # 买入条件：MACD金叉且RSI未超买
+            # Buy condition: MACD Golden Cross and RSI not overbought
             if not position.size and macd_crossover and rsi[0] < self.params.rsi_upper:
                 size = self.get_position_size(data)
                 self.buy(data=data, size=size)
 
-            # 卖出条件：MACD死叉或RSI超买
+            # Sell condition: MACD Death Cross or RSI overbought
             elif position.size and (macd_crossunder or rsi[0] > self.params.rsi_upper):
                 self.sell_position(data)
