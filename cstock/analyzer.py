@@ -99,19 +99,22 @@ class Analyzer:
         print("\n=== Backtest Results Summary ===\n")
         format_str = "  {:<24} : {:<24}"
 
-        # Print basic statistics
-        print("Basic Statistics:")
-        for key, value in self.analysis.items():
-            if key == "Annual Returns":
-                continue
-            elif isinstance(value, float):
-                if "Rate" in key or key in [
-                    "Total Return",
-                    "Annual Return",
-                    "Max Drawdown",
-                ]:
+        # 基础统计信息
+        print("基础统计信息:")
+        basic_stats = [
+            "Total Profit",
+            "Start Date",
+            "End Date",
+            "Backtest Days",
+            "Total Return",
+            "Annual Return",
+        ]
+        for key in basic_stats:
+            value = self.analysis.get(key)
+            if isinstance(value, float):
+                if key in ["Total Return", "Annual Return"]:
                     formatted_value = f"{value:.2%}"
-                elif "Profit" in key or "Loss" in key:
+                elif "Profit" in key:
                     formatted_value = f"${value:.2f}"
                 else:
                     formatted_value = f"{value:.2f}"
@@ -119,31 +122,105 @@ class Analyzer:
                 formatted_value = str(value)
             print(format_str.format(key, formatted_value))
 
+        # 风险指标
+        print("\n风险指标:")
+        risk_stats = [
+            "Sharpe Ratio",
+            "VWR Score",
+            "Max Drawdown",
+            "Max Drawdown Period",
+            "SQN Score",
+        ]
+        for key in risk_stats:
+            value = self.analysis.get(key)
+            if isinstance(value, float):
+                if key == "Max Drawdown":
+                    formatted_value = f"{value:.2%}"
+                else:
+                    formatted_value = f"{value:.2f}"
+            else:
+                formatted_value = str(value)
+            print(format_str.format(key, formatted_value))
+
+        # 交易统计
+        print("\n交易统计:")
+        trade_stats = [
+            "Total Trades",
+            "Winning Trades",
+            "Losing Trades",
+            "Win Rate",
+            "Average Trade Profit",
+            "Max Single Win",
+            "Max Single Loss",
+            "Open Positions",
+        ]
+        for key in trade_stats:
+            value = self.analysis.get(key)
+            if isinstance(value, float):
+                if key == "Win Rate":
+                    formatted_value = f"{value:.2%}"
+                elif "Profit" in key or "Loss" in key or "Win" in key:
+                    formatted_value = f"${value:.2f}"
+                else:
+                    formatted_value = f"{value:.2f}"
+            else:
+                formatted_value = str(value)
+            print(format_str.format(key, formatted_value))
+
+        # 连续交易记录
+        print("\n连续交易记录:")
+        streak_stats = ["Longest Winning Streak", "Longest Losing Streak"]
+        for key in streak_stats:
+            value = self.analysis.get(key)
+            print(format_str.format(key, str(value)))
+
         # Print annual returns
         if "Annual Returns" in self.analysis:
-            print("\nAnnual Returns:")
+            print("\n年度收益:")
             for year, ret in self.analysis["Annual Returns"].items():
                 print(format_str.format(str(year), f"{ret:.2%}"))
 
         # Print transactions if available
         if hasattr(self.backtest_engine.strategy_instance.analyzers, "transactions"):
-            print("\nTransactions:")
-            txn_format = "  {:<24} {:<12} {:<10} {:<8} {:<16}"
-            print(txn_format.format("Date", "Amount", "Price", "Type", "Value"))
+            print("\n交易记录:")
+            txn_format = "  {:<24} {:<8} {:<12} {:<10} {:<8} {:<16} {:<10} {:<16}"
+            print(
+                txn_format.format(
+                    "Date",
+                    "Symbol",
+                    "Amount",
+                    "Price",
+                    "Type",
+                    "Value",
+                    "Commission",
+                    "Profit",
+                )
+            )
 
             transactions = (
                 self.backtest_engine.strategy_instance.analyzers.transactions.get_analysis()
             )
             for date, txns in transactions.items():
                 for txn in txns:
+                    # txn_type = "买入" if txn[0] > 0 else "卖出"
                     txn_type = "BUY" if txn[0] > 0 else "SELL"
+                    amount = abs(txn[0])
+                    price = txn[1]
+                    value = amount * price
+                    commission = value * self.backtest_engine.commission
+                    profit = -value - commission if txn[0] > 0 else value - commission
+                    symbol = txn[3] if len(txn) > 3 else "Unknown"
+
                     print(
                         txn_format.format(
                             date.strftime("%Y-%m-%d %H:%M:%S"),
-                            f"{abs(txn[0]):.0f}",
-                            f"${txn[1]:.2f}",
+                            symbol,
+                            f"{amount:.0f}",
+                            f"${price:.2f}",
                             txn_type,
-                            f"${abs(txn[0] * txn[1]):.2f}",
+                            f"${value:.2f}",
+                            f"${commission:.2f}",
+                            f"${profit:.2f}",
                         )
                     )
 

@@ -55,9 +55,9 @@ class SMACrossoverStrategy(BaseStrategy):
                 size = self.get_position_size(data)
                 if size > 0:
                     self.orders[data._name] = self.buy(data=data, size=size)
-                    self.log(f"Buy {data._name}, Price: {data.close[0]}, Size: {size}")
+                    self.log(f"买入: {data._name}, 价格: {data.close[0]}, 数量: {size}")
 
             # Check sell conditions
             elif self.getposition(data).size and sma_short < sma_long:
                 size = self.sell_position(data)
-                self.log(f"Sell {data._name}, Price: {data.close[0]}, Size: {size}")
+                self.log(f"卖出: {data._name}, 价格: {data.close[0]}, 数量: {size}")

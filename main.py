@@ -24,7 +24,7 @@ def main():
     # Initialize backtest engine
     engine = BacktestEngine(
         data_dict=data_dict,
-        strategy_class=DCAStrategy,
+        strategy_class=MACDRSIStrategy,
         initial_cash=config.INITIAL_CASH,
         commission=config.COMMISSION_RATE,
     )

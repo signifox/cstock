@@ -76,7 +76,7 @@ class DCAStrategy(BaseStrategy):
             buy_size = self.calculate_buy_size(data)
 
             if buy_size > 0:
-                self.log(f"DCA Buy {data._name}, Quantity: {buy_size}")
+                self.log(f"买入: {data._name}, 数量: {buy_size}")
                 self.orders[data._name] = self.buy(data=data, size=buy_size)
                 # Update last investment date for this stock
                 self.last_invest_dates[data._name] = data.datetime.date(0)

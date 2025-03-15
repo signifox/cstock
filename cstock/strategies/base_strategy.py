@@ -16,6 +16,9 @@ class BaseStrategy(bt.Strategy):
     def __init__(self):
         # Track orders
         self.orders = {}
+        # Track stock symbols
+        self._symbol_map = {}
+        self._next_symbol_id = 0
 
         # Initialize risk manager
         self.risk_manager = RiskManager(
@@ -24,9 +27,19 @@ class BaseStrategy(bt.Strategy):
             max_position_size=self.params.max_position_size,
         )
 
+    def _get_symbol_id(self, symbol):
+        """Get numeric ID for stock symbol"""
+        if symbol not in self._symbol_map:
+            self._symbol_map[symbol] = self._next_symbol_id
+            self._next_symbol_id += 1
+        return self._symbol_map[symbol]
+
     def log(self, txt, dt=None):
         """Log strategy information"""
         dt = dt or self.datas[0].datetime.date(0)
+        # Replace stock symbols with numeric IDs
+        for symbol, symbol_id in self._symbol_map.items():
+            txt = txt.replace(symbol, str(symbol_id))
         print(f"{dt.isoformat()}, {txt}")
 
     def notify_order(self, order):
@@ -39,9 +52,9 @@ class BaseStrategy(bt.Strategy):
 
             if order.isbuy():
                 self.log(
-                    f"BUY EXECUTED: {order.data._name}, Price: {order.executed.price:.2f}, "
-                    f"Size: {order.executed.size}, Value: {order.executed.value:.2f}, "
-                    f"Commission: {order.executed.comm:.2f}"
+                    f"买入: {order.data._name}, 价格: {order.executed.price:.2f}, "
+                    f"数量: {order.executed.size}, 金额: {order.executed.value:.2f}, "
+                    f"手续费: {order.executed.comm:.2f}"
                 )
                 # Add new position to risk manager
                 self.risk_manager.add_position(order.data._name, order.executed.price)
@@ -55,18 +68,18 @@ class BaseStrategy(bt.Strategy):
                     return
 
                 self.log(
-                    f"SELL EXECUTED: {order.data._name}, Price: {order.executed.price:.2f}, "
-                    f"Size: {order.executed.size}, Value: {abs(order.executed.value):.2f}, "
-                    f"Commission: {order.executed.comm:.2f}"
+                    f"卖出: {order.data._name}, 价格: {order.executed.price:.2f}, "
+                    f"数量: {order.executed.size}, 金额: {abs(order.executed.value):.2f}, "
+                    f"手续费: {order.executed.comm:.2f}"
                 )
                 # Remove position from risk manager
                 self.risk_manager.remove_position(order.data._name)
 
         elif order.status in [order.Canceled, order.Margin, order.Rejected]:
             error_type = {
-                order.Canceled: "Order Canceled",
-                order.Margin: "Margin Insufficient",
-                order.Rejected: "Order Rejected",
+                order.Canceled: "订单已取消",
+                order.Margin: "保证金不足",
+                order.Rejected: "订单被拒绝",
             }.get(order.status)
             error_detail = f"{error_type}: {order.data._name}"
             if hasattr(order, "info") and order.info:
@@ -81,8 +94,8 @@ class BaseStrategy(bt.Strategy):
             return
 
         self.log(
-            f"TRADE PROFIT: {trade.data._name}, Gross: {trade.pnl:.2f}, "
-            f"Net: {trade.pnlcomm:.2f}"
+            f"交易利润: {trade.data._name}, 毛利: {trade.pnl:.2f}, "
+            f"净利: {trade.pnlcomm:.2f}"
         )
 
     def get_position_size(self, data):
@@ -100,14 +113,15 @@ class BaseStrategy(bt.Strategy):
             indicators = getattr(self, "indicators", {})
             rsi = None
             if data._name in indicators:
-                rsi = indicators[data._name].get("rsi", [None])[0]
+                rsi = indicators[data._name]["rsi"][0]
 
             should_exit, exit_type = self.risk_manager.check_exit_signals(
                 data._name, data.close[0], rsi
             )
 
             if should_exit:
-                self.log(f"{exit_type.upper()} TRIGGERED: {data._name}")
+                exit_type_cn = "触发止损" if exit_type == "stop_loss" else "触发止盈"
+                self.log(f"{exit_type_cn}: {data._name}")
                 self.sell_position(data)
 
     def next(self):
@@ -118,7 +132,7 @@ class BaseStrategy(bt.Strategy):
 
     def start(self):
         """Called when strategy starts"""
-        self.log("Strategy Started")
+        self.log("策略启动")
 
     def sell_position(self, data):
         """Sell position"""
@@ -128,7 +142,7 @@ class BaseStrategy(bt.Strategy):
 
         # Skip if the symbol has already executed a sell operation in current bar
         if data._name in self.orders and self.orders[data._name] is not None:
-            print(f"Warning, {data._name} has already been sold in this bar")
+            print(f"警告: {data._name} 在当前周期已经卖出")
             return 0
 
         # Clear all positions at once
@@ -138,4 +152,4 @@ class BaseStrategy(bt.Strategy):
 
     def stop(self):
         """Called when strategy ends"""
-        self.log("Strategy Ended")
+        self.log("策略结束")

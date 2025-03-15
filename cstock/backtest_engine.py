@@ -50,12 +50,6 @@ class BacktestEngine:
         # Add strategy
         cerebro.addstrategy(self.strategy_class, **self.strategy_params)
 
-        # Add observers
-        cerebro.addobserver(bt.observers.BuySell)
-        cerebro.addobserver(bt.observers.Value)
-        cerebro.addobserver(bt.observers.DrawDown)
-        cerebro.addobserver(bt.observers.Trades)
-
         # Set risk-free rate (annual rate, e.g., 4%)
         risk_free_rate = 0.04  # Annual risk-free rate
         # Add SharpeRatio analyzer with custom parameters
