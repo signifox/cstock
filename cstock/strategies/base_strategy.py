@@ -1,6 +1,5 @@
 import backtrader as bt
 from cstock.risk_manager import RiskManager
-from cstock.single_stock_analyzer import SingleStockAnalyzer
 
 
 class BaseStrategy(bt.Strategy):
@@ -24,11 +23,6 @@ class BaseStrategy(bt.Strategy):
             take_profit_pct=self.params.take_profit_pct,
             max_position_size=self.params.max_position_size,
         )
-
-        # Initialize analyzer for each data source
-        self.stock_analyzers = {}
-        for data in self.datas:
-            self.stock_analyzers[data._name] = SingleStockAnalyzer(data._name)
 
     def log(self, txt, dt=None):
         """Log strategy information"""
@@ -91,10 +85,6 @@ class BaseStrategy(bt.Strategy):
             f"Net: {trade.pnlcomm:.2f}"
         )
 
-        # Update stock analyzer
-        if trade.data._name in self.stock_analyzers:
-            self.stock_analyzers[trade.data._name].update_trade(trade)
-
     def get_position_size(self, data):
         """Calculate position size using risk manager for position management"""
         return self.risk_manager.get_position_size(data, self.broker)
@@ -149,6 +139,3 @@ class BaseStrategy(bt.Strategy):
     def stop(self):
         """Called when strategy ends"""
         self.log("Strategy Ended")
-
-        # Print statistics for all stocks using unified table format
-        SingleStockAnalyzer.print_all_summaries(self.stock_analyzers.values())
