@@ -1,5 +1,6 @@
 import backtrader as bt
 from datetime import datetime
+import pandas as pd
 
 
 class SingleStockAnalyzer:
@@ -77,41 +78,27 @@ class SingleStockAnalyzer:
         # Get summary data for all stocks
         all_summaries = [analyzer.get_summary() for analyzer in analyzers]
 
-        # Calculate maximum length for each field for alignment
-        max_lengths = {}
-        for summary in all_summaries:
-            for key, value in summary.items():
-                value_str = str(value)
-                if isinstance(value, float):
-                    if "Rate" in key:
-                        value_str = f"{value:.2%}"
-                    else:
-                        value_str = f"{value:.2f}"
-                max_lengths[key] = max(max_lengths.get(key, len(key)), len(value_str))
+        # Convert to DataFrame
+        df = pd.DataFrame(all_summaries)
 
-        # Print header
-        header = ""
-        separator = ""
-        for key in all_summaries[0].keys():
-            width = max_lengths[key] + 2  # Add 2 spaces padding
-            header += f"{key:^{width}}"
-            separator += "-" * width
+        # Set display options
+        pd.set_option("display.float_format", lambda x: "{:.2f}".format(x))
+        pd.set_option("display.max_columns", None)
+        pd.set_option("display.width", None)
 
-        print("\n" + header)
-        print(separator)
+        # Format specific columns
+        if not df.empty:
+            df["Win Rate"] = df["Win Rate"].map("{:.2%}".format)
+            df["Total Profit"] = df["Total Profit"].map("${:.2f}".format)
+            df["Average Trade Profit"] = df["Average Trade Profit"].map(
+                "${:.2f}".format
+            )
+            df["Total Commission"] = df["Total Commission"].map("${:.2f}".format)
 
-        # Print data row for each stock
-        for summary in all_summaries:
-            row = ""
-            for key, value in summary.items():
-                width = max_lengths[key] + 2  # Add 2 spaces padding
-                if isinstance(value, float):
-                    if "Rate" in key:
-                        row += f"{value:>{width}.2%}"
-                    else:
-                        row += f"{value:>{width}.2f}"
-                else:
-                    row += f"{value:^{width}}"
-            print(row)
+        # Print the formatted DataFrame
+        print("\n" + str(df.to_string(index=False)) + "\n")
 
-        print("\n")
+        # Reset display options
+        pd.reset_option("display.float_format")
+        pd.reset_option("display.max_columns")
+        pd.reset_option("display.width")

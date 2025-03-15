@@ -12,29 +12,30 @@ class DCAStrategy(BaseStrategy):
 
     params = (
         ("invest_date", 1),  # Monthly investment date (1-31)
-        ("invest_amount", 5000),  # Investment amount per transaction
-        ("max_position_size", 0.8),  # Maximum position size ratio
+        ("invest_amount", 2000),  # Investment amount per transaction
+        ("max_position_size", 0.5),  # Maximum position size ratio
         ("stop_loss_pct", 0.1),  # Stop loss percentage
         ("take_profit_pct", 0.4),  # Take profit percentage
     )
 
     def __init__(self):
         super().__init__()
-        # Record last investment date
-        self.last_invest_date = None
+        # Record last investment date for each stock
+        self.last_invest_dates = {}
 
-    def is_invest_day(self):
-        """Check if current day is investment day"""
-        current_date = self.data.datetime.date(0)
+    def is_invest_day(self, data):
+        """Check if current day is investment day for the given stock"""
+        current_date = data.datetime.date(0)
 
-        # If this is the first run of the strategy, return True for initial investment
-        if self.last_invest_date is None:
+        # If this is the first run for this stock, return True for initial investment
+        if data._name not in self.last_invest_dates:
             return True
 
+        last_invest_date = self.last_invest_dates[data._name]
         # Skip if already invested this month
         if (
-            current_date.year == self.last_invest_date.year
-            and current_date.month == self.last_invest_date.month
+            current_date.year == last_invest_date.year
+            and current_date.month == last_invest_date.month
         ):
             return False
 
@@ -67,8 +68,8 @@ class DCAStrategy(BaseStrategy):
             if self.orders.get(data._name):
                 continue
 
-            # Check if it's investment day
-            if not self.is_invest_day():
+            # Check if it's investment day for this stock
+            if not self.is_invest_day(data):
                 continue
 
             # Calculate buy quantity
@@ -77,5 +78,5 @@ class DCAStrategy(BaseStrategy):
             if buy_size > 0:
                 self.log(f"DCA Buy {data._name}, Quantity: {buy_size}")
                 self.orders[data._name] = self.buy(data=data, size=buy_size)
-                # Update last investment date
-                self.last_invest_date = self.data.datetime.date(0)
+                # Update last investment date for this stock
+                self.last_invest_dates[data._name] = data.datetime.date(0)

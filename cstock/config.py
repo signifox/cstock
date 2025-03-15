@@ -17,7 +17,7 @@ class Config:
             # "AAPL",  # Apple Inc.
             # "MSFT",  # Microsoft Corporation
             # "AMZN",  # Amazon.com Inc.
-            # "GOOGL",  # Alphabet Inc.
+            "GOOGL",  # Alphabet Inc.
             "TSLA",  # Tesla Inc.
             # "META",  # Meta Platforms Inc.
         ]
