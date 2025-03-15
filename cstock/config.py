@@ -17,8 +17,11 @@ class Config:
             # "AAPL",  # Apple Inc.
             # "MSFT",  # Microsoft Corporation
             # "AMZN",  # Amazon.com Inc.
-            "GOOGL",  # Alphabet Inc.
-            "TSLA",  # Tesla Inc.
+            # "GOOGL",  # Alphabet Inc.
+            # "TSLA",  # Tesla Inc.
+            # "NVDA",  # NVIDIA Corporation
+            "SPY",
+            "QQQ",
             # "META",  # Meta Platforms Inc.
         ]
 

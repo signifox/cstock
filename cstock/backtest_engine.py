@@ -78,6 +78,13 @@ class BacktestEngine:
         # Add AnnualReturn analyzer
         cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name="annual_return")
 
+        # Add TimeReturn observer
+        cerebro.addobserver(
+            bt.observers.TimeReturn,
+            timeframe=bt.TimeFrame.Days,
+            compression=1,  # Daily returns
+        )
+
         self.cerebro = cerebro
         return cerebro
 

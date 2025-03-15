@@ -37,7 +37,7 @@ def main():
     analyzer.print_summary()
 
     # Plot backtest results
-    # analyzer.plot_results()
+    analyzer.plot_results()
 
 
 if __name__ == "__main__":
