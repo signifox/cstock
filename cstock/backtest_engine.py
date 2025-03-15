@@ -66,6 +66,8 @@ class BacktestEngine:
         cerebro.addanalyzer(bt.analyzers.TradeAnalyzer, _name="trade")
         # Add drawdown analyzer
         cerebro.addanalyzer(bt.analyzers.DrawDown, _name="drawdown")
+        # Add SQN analyzer
+        cerebro.addanalyzer(bt.analyzers.SQN, _name="sqn")
         # Add returns analyzer
         cerebro.addanalyzer(
             bt.analyzers.Returns,

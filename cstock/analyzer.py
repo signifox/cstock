@@ -31,6 +31,7 @@ class Analyzer:
         drawdown = (
             self.backtest_engine.strategy_instance.analyzers.drawdown.get_analysis()
         )
+        sqn = self.backtest_engine.strategy_instance.analyzers.sqn.get_analysis()
 
         # Get backtest period
         data = self.backtest_engine.strategy_instance.datas[0]
@@ -51,6 +52,7 @@ class Analyzer:
             "Sharpe Ratio": sharpe.get("sharperatio", 0.0),
             "Max Drawdown": drawdown.get("max", {}).get("drawdown", 0.0),
             "Max Drawdown Period": drawdown.get("max", {}).get("len", 0),
+            "SQN Score": sqn.get("sqn", 0.0),
             "Total Return": total_return,
             "Annual Return": annual_return,
             "Total Trades": trade_analyzer.get("total", {}).get("total", 0),
