@@ -32,6 +32,10 @@ class Analyzer:
             self.backtest_engine.strategy_instance.analyzers.drawdown.get_analysis()
         )
         sqn = self.backtest_engine.strategy_instance.analyzers.sqn.get_analysis()
+        annual_returns = (
+            self.backtest_engine.strategy_instance.analyzers.annual_return.get_analysis()
+        )
+        vwr = self.backtest_engine.strategy_instance.analyzers.vwr.get_analysis()
 
         # Get backtest period
         data = self.backtest_engine.strategy_instance.datas[0]
@@ -49,7 +53,9 @@ class Analyzer:
             "Start Date": start_date.strftime("%Y-%m-%d"),
             "End Date": end_date.strftime("%Y-%m-%d"),
             "Backtest Days": days,
+            "Annual Returns": annual_returns,  # Add annual returns data
             "Sharpe Ratio": sharpe.get("sharperatio", 0.0),
+            "VWR Score": vwr.get("vwr", 0.0),
             "Max Drawdown": drawdown.get("max", {}).get("drawdown", 0.0),
             "Max Drawdown Period": drawdown.get("max", {}).get("len", 0),
             "SQN Score": sqn.get("sqn", 0.0),
@@ -79,7 +85,11 @@ class Analyzer:
     def print_summary(self):
         print("\n=== Backtest Results Summary ===\n")
         for key, value in self.analysis.items():
-            if isinstance(value, float):
+            if key == "Annual Returns":
+                print("\nAnnual Returns:")
+                for year, ret in value.items():
+                    print(f"{year}: {ret:.2%}")
+            elif isinstance(value, float):
                 print(f"{key}: {value:.2%}" if "Rate" in key else f"{key}: {value:.2f}")
             else:
                 print(f"{key}: {value}")
