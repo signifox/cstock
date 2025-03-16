@@ -12,6 +12,12 @@ class Config:
         self.INITIAL_CASH = 100000  # Initial Capital
         self.COMMISSION_RATE = 0.001  # Commission Rate
 
+        # Output Configuration
+        self.SHOW_TRANSACTIONS = (
+            False  # Whether to show transaction details in backtest results
+        )
+        self.SHOW_PLOT = False  # Whether to show plot after backtest
+
         # Stock Pool Configuration
         self.STOCK_LIST = [
             # "AAPL",  # Apple Inc.
@@ -20,9 +26,10 @@ class Config:
             # "GOOGL",  # Alphabet Inc.
             # "TSLA",  # Tesla Inc.
             # "NVDA",  # NVIDIA Corporation
+            # "META",  # Meta Platforms Inc.
             "SPY",
             "QQQ",
-            # "META",  # Meta Platforms Inc.
+            "GLD",
         ]
 
 
@@ -36,3 +43,5 @@ END_DATE = config.END_DATE
 INITIAL_CASH = config.INITIAL_CASH
 COMMISSION_RATE = config.COMMISSION_RATE
 STOCK_LIST = config.STOCK_LIST
+SHOW_TRANSACTIONS = config.SHOW_TRANSACTIONS
+SHOW_PLOT = config.SHOW_PLOT

@@ -8,7 +8,7 @@ class BaseStrategy(bt.Strategy):
     """
 
     params = (
-        ("max_position_size", 0.3),  # Maximum position size ratio
+        ("max_position_size", 0.4),  # Maximum position size ratio
         ("stop_loss_pct", 0.1),  # Stop loss percentage
         ("take_profit_pct", 0.2),  # Take profit percentage
     )
@@ -126,7 +126,6 @@ class BaseStrategy(bt.Strategy):
 
     def next(self):
         """Main strategy logic should be implemented in subclasses"""
-        self.risk_manager.reset_daily_cash()
         # Check stop loss and take profit signals
         self.check_exit_signals()
 

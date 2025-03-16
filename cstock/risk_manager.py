@@ -17,15 +17,10 @@ class RiskManager:
         self.base_take_profit_pct = take_profit_pct  # Base take profit percentage
         self.max_position_size = max_position_size
         self.positions = {}
-        self._today_used_cash = 0.0  # Track daily used cash
 
         # Dynamic take profit parameters
         self.rsi_threshold = 70  # RSI overbought threshold
         self.trend_bonus = 0.1  # Trend strength bonus for take profit (10%)
-
-    def reset_daily_cash(self):
-        """Reset daily used cash statistics"""
-        self._today_used_cash = 0.0
 
     def add_position(self, symbol, entry_price):
         """

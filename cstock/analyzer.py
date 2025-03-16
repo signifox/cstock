@@ -2,6 +2,7 @@ import pandas as pd
 import backtrader as bt
 import numpy as np
 from datetime import datetime
+from cstock.config import config
 
 
 class Analyzer:
@@ -180,8 +181,10 @@ class Analyzer:
             for year, ret in self.analysis["Annual Returns"].items():
                 print(format_str.format(str(year), f"{ret:.2%}"))
 
-        # Print transactions if available
-        if hasattr(self.backtest_engine.strategy_instance.analyzers, "transactions"):
+        # Print transactions if enabled and available
+        if config.SHOW_TRANSACTIONS and hasattr(
+            self.backtest_engine.strategy_instance.analyzers, "transactions"
+        ):
             print("\n交易记录:")
             txn_format = "  {:<24} {:<8} {:<12} {:<10} {:<8} {:<16} {:<10} {:<16}"
             print(
@@ -226,4 +229,5 @@ class Analyzer:
 
     def plot_results(self):
         """Plot backtest result charts"""
-        self.backtest_engine.cerebro.plot(style="candlestick")
+        if config.SHOW_PLOT:
+            self.backtest_engine.cerebro.plot(style="candlestick")
