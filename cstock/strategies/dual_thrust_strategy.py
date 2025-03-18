@@ -11,7 +11,7 @@ class DualThrustStrategy(BaseStrategy):
     )
 
     def __init__(self):
-        super().__init__()
+        super(DualThrustStrategy, self).__init__()
         self.high_n = {}
         self.low_n = {}
         self.close_n = {}
@@ -25,7 +25,7 @@ class DualThrustStrategy(BaseStrategy):
             self.close_n[data._name] = data.close
 
     def next(self):
-        super().next()
+        super(DualThrustStrategy, self).next()
 
         if len(self) < self.params.n_days:
             return

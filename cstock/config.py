@@ -5,7 +5,7 @@ class Config:
     def __init__(self):
         # Data Configuration
         self.DATA_DIR = "data"
-        self.START_DATE = "2022-06-01"
+        self.START_DATE = "2005-06-01"
         self.END_DATE = "2024-12-31"
 
         # Backtest Configuration

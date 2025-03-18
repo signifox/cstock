@@ -19,7 +19,7 @@ class DCAStrategy(BaseStrategy):
     )
 
     def __init__(self):
-        super().__init__()
+        super(DCAStrategy, self).__init__()
         # Record last investment date for each stock
         self.last_invest_dates = {}
 
@@ -60,7 +60,7 @@ class DCAStrategy(BaseStrategy):
         return min(size, max_size) if max_size > 0 else size
 
     def next(self):
-        super().next()
+        super(DCAStrategy, self).next()
 
         # Iterate through all data sources (stocks)
         for data in self.datas:

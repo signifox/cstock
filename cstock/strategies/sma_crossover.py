@@ -13,7 +13,7 @@ class SMACrossoverStrategy(BaseStrategy):
     )
 
     def __init__(self):
-        super().__init__()
+        super(SMACrossoverStrategy, self).__init__()
 
         self.indicators = {}
         for data in self.datas:
@@ -37,7 +37,7 @@ class SMACrossoverStrategy(BaseStrategy):
             }
 
     def next(self):
-        super().next()
+        super(SMACrossoverStrategy, self).next()
 
         for data in self.datas:
             if self.orders.get(data._name):

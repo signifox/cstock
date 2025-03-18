@@ -4,6 +4,8 @@ from cstock.analyzer import Analyzer
 from cstock.backtest_engine import BacktestEngine
 from cstock.config import config
 
+
+from cstock.strategies.base_strategy import BaseStrategy
 from cstock.strategies.macd_rsi_strategy import MACDRSIStrategy
 from cstock.strategies.sma_crossover import SMACrossoverStrategy
 from cstock.strategies.dual_thrust_strategy import DualThrustStrategy

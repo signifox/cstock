@@ -8,9 +8,9 @@ class BaseStrategy(bt.Strategy):
     """
 
     params = (
-        ("max_position_size", 0.4),  # Maximum position size ratio
-        ("stop_loss_pct", 0.1),  # Stop loss percentage
-        ("take_profit_pct", 0.2),  # Take profit percentage
+        ("max_position_size", 0.3),  # Maximum position size ratio
+        ("stop_loss_pct", 0.5),  # Stop loss percentage
+        ("take_profit_pct", 0.5),  # Take profit percentage
     )
 
     def __init__(self):
@@ -27,19 +27,18 @@ class BaseStrategy(bt.Strategy):
             max_position_size=self.params.max_position_size,
         )
 
-    def _get_symbol_id(self, symbol):
-        """Get numeric ID for stock symbol"""
-        if symbol not in self._symbol_map:
-            self._symbol_map[symbol] = self._next_symbol_id
-            self._next_symbol_id += 1
-        return self._symbol_map[symbol]
+        # Initialize technical indicators
+        self.indicators = {}
+        for data in self.datas:
+            self.indicators[data._name] = {
+                "rsi": bt.indicators.RSI(data.close, period=14),
+                "macd": bt.indicators.MACD(data.close),
+                "kdj": bt.indicators.StochasticFull(data),
+            }
 
     def log(self, txt, dt=None):
         """Log strategy information"""
         dt = dt or self.datas[0].datetime.date(0)
-        # Replace stock symbols with numeric IDs
-        for symbol, symbol_id in self._symbol_map.items():
-            txt = txt.replace(symbol, str(symbol_id))
         print(f"{dt.isoformat()}, {txt}")
 
     def notify_order(self, order):
@@ -110,10 +109,7 @@ class BaseStrategy(bt.Strategy):
 
             # Check if stop loss or take profit is triggered
             # Get current RSI value
-            indicators = getattr(self, "indicators", {})
-            rsi = None
-            if data._name in indicators:
-                rsi = indicators[data._name]["rsi"][0]
+            rsi = self.indicators[data._name]["rsi"][0]
 
             should_exit, exit_type = self.risk_manager.check_exit_signals(
                 data._name, data.close[0], rsi

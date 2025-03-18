@@ -228,6 +228,6 @@ class Analyzer:
                     )
 
     def plot_results(self):
-        """Plot backtest result charts"""
+        """Plot backtest result charts using candlestick style"""
         if config.SHOW_PLOT:
             self.backtest_engine.cerebro.plot(style="candlestick")

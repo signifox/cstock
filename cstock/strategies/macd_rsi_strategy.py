@@ -13,7 +13,7 @@ class MACDRSIStrategy(BaseStrategy):
     )
 
     def __init__(self):
-        super().__init__()
+        super(MACDRSIStrategy, self).__init__()
 
         self.indicators = {}
         for data in self.datas:
@@ -31,7 +31,7 @@ class MACDRSIStrategy(BaseStrategy):
             self.indicators[data._name] = {"macd": macd, "rsi": rsi}
 
     def next(self):
-        super().next()
+        super(MACDRSIStrategy, self).next()
 
         for data in self.datas:
             if self.orders.get(data._name):
