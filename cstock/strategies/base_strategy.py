@@ -16,9 +16,6 @@ class BaseStrategy(bt.Strategy):
     def __init__(self):
         # Track orders
         self.orders = {}
-        # Track stock symbols
-        self._symbol_map = {}
-        self._next_symbol_id = 0
 
         # Initialize risk manager
         self.risk_manager = RiskManager(

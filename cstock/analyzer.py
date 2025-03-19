@@ -1,6 +1,7 @@
 import pandas as pd
 import backtrader as bt
 import numpy as np
+import quantstats as qs
 from datetime import datetime
 from cstock.config import config
 
@@ -227,7 +228,66 @@ class Analyzer:
                         )
                     )
 
+    def _generate_report(self):
+        """
+        Generate performance report by processing portfolio values and benchmark data
+        Returns:
+            str: Path to the generated report
+        """
+        # Get portfolio values
+        portfolio_values = (
+            self.backtest_engine.strategy_instance.analyzers.portfolio_value.get_analysis()
+        )
+        df = pd.Series(portfolio_values, name="portfolio_value")
+        df.index = pd.to_datetime(df.index)
+
+        # Calculate daily returns
+        returns = pd.Series(df.pct_change(), dtype="float64").dropna()
+        returns.index = pd.to_datetime(returns.index)
+        returns = returns.resample("D").last().dropna()  # Add aggregation function
+        # Get benchmark data from data_dict
+        benchmark = None
+        if "SPY" in self.backtest_engine.data_dict:
+            try:
+                benchmark_data = self.backtest_engine.data_dict["SPY"]
+                benchmark = benchmark_data["Close"].pct_change()
+                benchmark.index = pd.to_datetime(benchmark.index)
+                benchmark = (
+                    benchmark.resample("D").last().dropna()
+                )  # Consistent processing
+                benchmark = benchmark.reindex(returns.index, method="ffill")
+                benchmark.name = "SPY"
+            except Exception as e:
+                print(f"Error processing benchmark data: {str(e)}")
+                benchmark = None
+        qs.extend_pandas()
+        try:
+            qs.reports.html(
+                returns,
+                benchmark=benchmark,
+                output="backtest_report.html",
+                title="Strategy",
+                download_filename="backtest_report.html",
+                rf=0.0,
+                grayscale=False,
+                figsize=(12, 6),
+                display=False,
+                compounded=True,
+                # periods_per_year=252,
+                match_dates=True,
+            )
+            return "backtest_report.html"
+        except Exception as e:
+            print(f"Error generating report: {str(e)}")
+            return None
+
     def plot_results(self):
         """Plot backtest result charts using candlestick style"""
         if config.SHOW_PLOT:
             self.backtest_engine.cerebro.plot(style="candlestick")
+
+        # Generate performance report
+        if config.ENABLE_REPORT:
+            report_path = self._generate_report()
+            if report_path:
+                print(f"Backtest report generated successfully: {report_path}")

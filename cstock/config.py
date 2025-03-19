@@ -17,6 +17,7 @@ class Config:
             False  # Whether to show transaction details in backtest results
         )
         self.SHOW_PLOT = False  # Whether to show plot after backtest
+        self.ENABLE_REPORT = True  # Whether to enable report generation
 
         # Stock Pool Configuration
         self.STOCK_LIST = [
@@ -45,3 +46,4 @@ COMMISSION_RATE = config.COMMISSION_RATE
 STOCK_LIST = config.STOCK_LIST
 SHOW_TRANSACTIONS = config.SHOW_TRANSACTIONS
 SHOW_PLOT = config.SHOW_PLOT
+ENABLE_REPORT = config.ENABLE_REPORT

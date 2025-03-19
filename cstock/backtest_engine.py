@@ -77,6 +77,12 @@ class BacktestEngine:
 
         # Add AnnualReturn analyzer
         cerebro.addanalyzer(bt.analyzers.AnnualReturn, _name="annual_return")
+        cerebro.addanalyzer(bt.analyzers.TimeReturn, _name="time_return")
+
+        # Add PortfolioValue analyzer
+        from cstock.analyzers import PortfolioValue
+
+        cerebro.addanalyzer(PortfolioValue, _name="portfolio_value")
 
         # Add TimeReturn observer
         cerebro.addobserver(
