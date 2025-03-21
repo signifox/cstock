@@ -67,9 +67,6 @@ class RiskManager:
         position = self.positions[symbol]
         entry_price = position["entry_price"]
 
-        # Calculate current return
-        current_return = (current_price - entry_price) / entry_price
-
         # Check stop loss condition
         if current_price <= position["stop_loss_price"]:
             return True, "stop_loss"
@@ -128,8 +125,6 @@ class RiskManager:
         Returns:
             int: Recommended position size
         """
-        symbol = data._name
-        current_time = data.datetime.datetime(0)
         current_price = data.close[0]
 
         # Calculate total value of current positions

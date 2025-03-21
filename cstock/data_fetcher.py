@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 import akshare as ak
-from datetime import datetime
 from cstock import config
 
 
@@ -54,7 +53,7 @@ class DataFetcher:
 
             # Rename columns to match backtrader
             stock_data = stock_data.rename(
-                columns={
+                {
                     "open": "Open",
                     "high": "High",
                     "low": "Low",

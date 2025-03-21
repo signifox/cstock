@@ -4,3 +4,4 @@ pandas==2.2.3
 numpy==1.26.2
 matplotlib==3.8.2
 quantstats==0.0.64
+ipython==8.18.1

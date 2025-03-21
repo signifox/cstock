@@ -1,8 +1,6 @@
 import pandas as pd
 import backtrader as bt
-import numpy as np
 import quantstats as qs
-from datetime import datetime
 from cstock.config import config
 
 

@@ -1,7 +1,4 @@
-import os
 import backtrader as bt
-import pandas as pd
-from datetime import datetime
 from cstock import config
 
 
