@@ -47,9 +47,6 @@ class DataFetcher:
             # Filter data by date range
             start_date = pd.to_datetime(start_date)
             end_date = pd.to_datetime(end_date)
-            stock_data = stock_data[
-                (stock_data.index >= start_date) & (stock_data.index <= end_date)
-            ]
 
             # Rename columns to match backtrader
             stock_data = stock_data.rename(
@@ -65,6 +62,9 @@ class DataFetcher:
             # Save to local file
             stock_data.to_csv(file_path)
 
+            stock_data = stock_data[
+                (stock_data.index >= start_date) & (stock_data.index <= end_date)
+            ]
             return stock_data
 
         except Exception as e:

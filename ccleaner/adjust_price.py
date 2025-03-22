@@ -14,72 +14,51 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_daily_close(minute_data: pd.DataFrame, date: datetime) -> Optional[float]:
+def get_daily_close(
+    symbol: str,
+    date: datetime,
+    daily_data: pd.DataFrame,
+) -> Optional[float]:
+    """
+    从天级数据中获取指定日期的收盘价
+
+    Args:
+        symbol (str): 股票代码
+        date (datetime): 日期
+
+    Returns:
+        float: 收盘价，如果获取失败则返回None
+    """
     try:
-        # 检查数据是否为空
-        if minute_data.empty:
-            logger.warning(f"数据为空，无法获取{date}的收盘价")
-            return None
-
-        # 创建时区对象
-        et_tz = pytz.timezone("America/New_York")
-        utc_tz = pytz.UTC
-
-        # 确保date是UTC时区的datetime对象
-        if date.tzinfo is None:
-            date = utc_tz.localize(date)
-        elif date.tzinfo != utc_tz:
-            date = date.astimezone(utc_tz)
-
-        # 设置目标日期的美东时间收盘时间点（16:00）
-        et_close = et_tz.localize(
-            datetime.combine(
-                date.date(),
-                datetime.strptime("16:00", "%H:%M").time(),
-            )
-        )
-        utc_close = et_close.astimezone(utc_tz)
-
-        # 确保minute_data的索引是UTC时区
-        if minute_data.index.tz is None:
-            minute_data.index = minute_data.index.tz_localize(utc_tz)
-
-        # 检查日期是否在数据范围内
-        if utc_close < minute_data.index[0] or utc_close > minute_data.index[-1]:
-            return None
-
-        # 过滤出当天16:00之前的所有数据（包括盘前和夜盘）
-        trading_data = minute_data.copy()
-        trading_data.index = trading_data.index.tz_convert(et_tz)
-        trading_data = trading_data[
-            trading_data.index.time <= datetime.strptime("16:00", "%H:%M").time()
-        ]
-        trading_data.index = trading_data.index.tz_convert(utc_tz)
-
-        # 精确匹配收盘时间
-        try:
-            exact_match = trading_data.loc[utc_close, "Close"]
-            logger.debug(f"找到收盘价: {exact_match}")
-            return exact_match
-        except KeyError:
-            # 尝试查找前1分钟的数据
-            one_minute_before = utc_close - timedelta(minutes=1)
-            try:
-                prev_match = trading_data.loc[one_minute_before, "Close"]
-                logger.debug(f"找到前1分钟收盘价: {prev_match}")
-                return prev_match
-            except KeyError:
-                logger.warning(f"在{utc_close}及其前1分钟均未找到收盘价数据")
-                return None
-
+        # 确保日期格式为YYYY-MM-DD
+        if not isinstance(date.date(), str):
+            date_str = date.date().strftime("%Y-%m-%d")
+        else:
+            date_str = date.date()
+        close_price = daily_data.loc[date_str, "Close"]
+        return float(close_price)
+    except KeyError:
+        logger.warning(f"未找到{symbol}在{date}的收盘价数据")
+        return None
     except Exception as e:
-        logger.warning(f"获取{date}的收盘价失败: {str(e)}")
+        logger.error(f"获取{symbol}在{date}的收盘价时发生错误: {str(e)}")
         return None
 
 
 class PriceAdjuster:
-    def __init__(self, symbols: List[str]):
+    def __init__(self, symbols: List[str], daily_data_dir: str = "data"):
+        self.daily_data_dir = daily_data_dir
         self.symbols = symbols
+        self.file_paths = {
+            symbol: os.path.join(self.daily_data_dir, f"{symbol}.day.csv")
+            for symbol in symbols
+        }
+        # 初始化时一次性加载所有symbol的daily_data
+        self.daily_data = {
+            symbol: pd.read_csv(path, index_col=0, parse_dates=True)
+            for symbol, path in self.file_paths.items()
+            if os.path.exists(path)
+        }
 
     def load_adjust_data(
         self, dividends_file: str, splits_file: str
@@ -172,24 +151,19 @@ class PriceAdjuster:
                 elif ex_date.tzinfo != utc_tz:
                     ex_date = ex_date.astimezone(utc_tz)
 
-                # 获取除权日当天的收盘价
-                ex_close = get_daily_close(price_data, ex_date)
-                if ex_close is None:
-                    # 检查是否是因为日期超出范围导致的
-                    if (
-                        ex_date < price_data.index[0].to_pydatetime()
-                        or ex_date > price_data.index[-1].to_pydatetime()
-                    ):
-                        logger.warning(
-                            f"除权日期{ex_date}超出数据范围({price_data.index[0]} - {price_data.index[-1]})，结束后续复权因子计算"
-                        )
-                        return price_data
-                    else:
-                        logger.warning(
-                            f"无法获取{symbol}在{ex_date}的收盘价，跳过此分红记录"
-                        )
-                        continue
+                # 检查ex_date是否在数据范围内
+                if (
+                    ex_date < price_data.index[0].to_pydatetime()
+                    or ex_date > price_data.index[-1].to_pydatetime()
+                ):
+                    logger.warning(
+                        f"除权日{ex_date}超出数据范围({price_data.index[0]} - {price_data.index[-1]})，跳过该分红记录"
+                    )
+                    continue
 
+                # 获取除权日当天的收盘价
+                ex_close = get_daily_close(symbol, ex_date, self.daily_data[symbol])
+                print(f"===================>{symbol}在{ex_date}的收盘价为{ex_close}")
                 # 获取除权日的收盘时间（UTC 21:00）
                 et_tz = pytz.timezone("America/New_York")
                 et_close = et_tz.localize(
@@ -417,7 +391,7 @@ def parse_args():
         "-i", "--input_dir", default="output", help="包含原始价格数据的输入目录"
     )
     parser.add_argument(
-        "-o", "--output_dir", default="adjusted_output", help="调整后数据的输出目录"
+        "-o", "--output_dir", default="data", help="调整后数据的输出目录"
     )
     parser.add_argument(
         "-s",

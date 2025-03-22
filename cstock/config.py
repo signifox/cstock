@@ -5,8 +5,8 @@ class Config:
     def __init__(self):
         # Data Configuration
         self.DATA_DIR = "data"
-        self.START_DATE = "2005-06-01"
-        self.END_DATE = "2024-12-31"
+        self.START_DATE = "2015-03-09"
+        self.END_DATE = "2025-03-21"
 
         # Backtest Configuration
         self.INITIAL_CASH = 100000  # Initial Capital
@@ -17,7 +17,7 @@ class Config:
             False  # Whether to show transaction details in backtest results
         )
         self.SHOW_PLOT = False  # Whether to show plot after backtest
-        self.ENABLE_REPORT = True  # Whether to enable report generation
+        self.ENABLE_REPORT = False  # Whether to enable report generation
 
         # Stock Pool Configuration
         self.STOCK_LIST = [
@@ -30,7 +30,7 @@ class Config:
             # "META",  # Meta Platforms Inc.
             "SPY",
             "QQQ",
-            "GLD",
+            # "GLD",
         ]
 
 
