@@ -12,6 +12,7 @@ class Config:
         # Backtest Configuration
         self.INITIAL_CASH = 100000  # Initial Capital
         self.COMMISSION_RATE = 0.001  # Commission Rate
+        self.SLIPPAGE_RATE = 0.001  # Slippage Rate
 
         # Output Configuration
         self.SHOW_TRANSACTIONS = (
@@ -41,6 +42,7 @@ END_DATE = config.END_DATE
 DATA_TYPE = config.DATA_TYPE
 INITIAL_CASH = config.INITIAL_CASH
 COMMISSION_RATE = config.COMMISSION_RATE
+SLIPPAGE_RATE = config.SLIPPAGE_RATE
 STOCK_LIST = config.STOCK_LIST
 SHOW_TRANSACTIONS = config.SHOW_TRANSACTIONS
 SHOW_PLOT = config.SHOW_PLOT

@@ -10,6 +10,7 @@ class BacktestEngine:
         strategy_params=None,
         initial_cash=config.INITIAL_CASH,
         commission=config.COMMISSION_RATE,
+        slippage=config.SLIPPAGE_RATE,
     ):
         """
         Initialize backtest engine
@@ -26,6 +27,7 @@ class BacktestEngine:
         self.strategy_params = strategy_params or {}
         self.initial_cash = initial_cash
         self.commission = commission
+        self.slippage = slippage
         self.cerebro = None
 
     def setup_cerebro(self):
@@ -43,6 +45,9 @@ class BacktestEngine:
 
         # Set commission (percentage mode)
         cerebro.broker.setcommission(commission=self.commission)
+
+        # Set slippage
+        cerebro.broker.set_slippage_perc(self.slippage)
 
         # Add strategy
         cerebro.addstrategy(self.strategy_class, **self.strategy_params)
