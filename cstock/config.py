@@ -21,16 +21,12 @@ class Config:
 
         # Stock Pool Configuration
         self.STOCK_LIST = [
-            # "AAPL",  # Apple Inc.
-            # "MSFT",  # Microsoft Corporation
-            # "AMZN",  # Amazon.com Inc.
-            # "GOOGL",  # Alphabet Inc.
-            # "TSLA",  # Tesla Inc.
-            # "NVDA",  # NVIDIA Corporation
-            # "META",  # Meta Platforms Inc.
+            "AAPL",  # Apple Inc.
+            "MSFT",  # Microsoft Corporation
+            "BRK.B",  # Berkshire Hathaway Inc.
+            "TSLA",  # Tesla Inc.
             "SPY",
             "QQQ",
-            # "GLD",
         ]
 
 

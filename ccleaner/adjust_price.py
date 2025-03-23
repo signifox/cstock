@@ -9,7 +9,7 @@ import argparse
 
 # 配置日志记录
 logging.basicConfig(
-    level=logging.WARNING, format="%(asctime)s - %(levelname)s - %(message)s"
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -207,20 +207,24 @@ class PriceAdjuster:
                     return price_data
 
                 # 计算拆股因子
-                split_factor = split["split_to"] / split["split_from"]
-
+                split_factor = split["split_from"] / split["split_to"]
+                print(
+                    f"===================>{symbol}在{execution_date}的拆股因子为{split_factor}"
+                )
                 # 更新复权因子
-                # 获取执行日的收盘时间（UTC 21:00）
-                et_close = et_tz.localize(
+                # 初始化时区变量
+                et_tz = pytz.timezone("America/New_York")
+                # 获取执行日的开盘时间（UTC 9:30）
+                et_open = et_tz.localize(
                     datetime.combine(
                         execution_date.date(),
-                        datetime.strptime("16:00", "%H:%M").time(),
+                        datetime.strptime("09:30", "%H:%M").time(),
                     )
                 )
-                utc_close = et_close.astimezone(utc_tz)
+                utc_open = et_open.astimezone(utc_tz)
 
                 price_data.loc[
-                    price_data.index <= utc_close, "adjust_factor"
+                    price_data.index <= utc_open, "adjust_factor"
                 ] *= split_factor
 
             except Exception as e:
@@ -243,11 +247,8 @@ class PriceAdjuster:
         """
         # 一次性调整所有OHLC价格列
         price_columns = ["Open", "High", "Low", "Close"]
-        # 使用广播机制进行向量化操作
         for col in price_columns:
             price_data[col] = price_data[col] * adjust_factor
-        # 对adjust_factor列也保留4位小数
-        price_data["adjust_factor"] = price_data["adjust_factor"]
         return price_data
 
     def process_data(
@@ -283,7 +284,6 @@ class PriceAdjuster:
                 price_data = self.calculate_adjustment_factors(
                     price_data, dividends_df, splits_df, symbol
                 )
-
                 # 应用复权因子并创建新的DataFrame避免修改原始数据
                 adjusted_price_data = price_data.copy()
                 adjusted_data[symbol] = self.adjust_price(
@@ -388,7 +388,7 @@ def save_adjusted_data(data: Dict[str, pd.DataFrame], output_dir: str) -> None:
 def parse_args():
     parser = argparse.ArgumentParser(description="对分钟级数据进行前复权处理")
     parser.add_argument(
-        "-i", "--input_dir", default="output", help="包含原始价格数据的输入目录"
+        "-i", "--input_dir", default="../output", help="包含原始价格数据的输入目录"
     )
     parser.add_argument(
         "-o", "--output_dir", default="data", help="调整后数据的输出目录"
@@ -397,19 +397,19 @@ def parse_args():
         "-s",
         "--symbols",
         nargs="+",
-        default=["SPY", "QQQ"],
+        default=["SPY", "QQQ", "TSLA", "AAPL", "BRK.B", "MSFT"],
         help="要处理的symbol列表",
     )
     parser.add_argument(
         "-d",
         "--dividends_file",
-        default="adjust_config/dividends_data.csv",
+        default="../adjust_config/dividends_data.csv",
         help="分红派息数据文件路径",
     )
     parser.add_argument(
         "-p",
         "--splits_file",
-        default="adjust_config/splits_data.csv",
+        default="../adjust_config/splits_data.csv",
         help="拆股并股数据文件路径",
     )
     return parser.parse_args()

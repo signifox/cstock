@@ -160,14 +160,14 @@ class CCleaner:
 def parse_args():
     parser = argparse.ArgumentParser(description="合并指定symbol的CSV数据")
     parser.add_argument(
-        "-i", "--input_dir", default="inputs", help="包含年月文件夹的输入目录"
+        "-i", "--input_dir", default="../inputs", help="包含年月文件夹的输入目录"
     )
-    parser.add_argument("-o", "--output_dir", default="output", help="输出目录")
+    parser.add_argument("-o", "--output_dir", default="../output", help="输出目录")
     parser.add_argument(
         "-s",
         "--symbols",
         nargs="+",
-        default=["SPY", "QQQ"],
+        default=["SPY", "QQQ", "AAPL", "TSLA", "MSFT", "BRK.B"],
         help="要合并的symbol列表",
     )
     parser.add_argument(

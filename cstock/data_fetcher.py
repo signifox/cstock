@@ -59,12 +59,12 @@ class DataFetcher:
                 }
             )
 
-            # Save to local file
-            stock_data.to_csv(file_path)
-
             stock_data = stock_data[
                 (stock_data.index >= start_date) & (stock_data.index <= end_date)
             ]
+
+            # Save to local file
+            stock_data.to_csv(file_path)
             return stock_data
 
         except Exception as e:

@@ -93,15 +93,15 @@ def fetch_stock_data(
                     "volume": "Volume",
                 }
             )
-            stock_data.to_csv(cache_file)
+            # 根据日期范围过滤数据
+            if start_date:
+                print(f"过滤数据，从{start_date}开始")
+                stock_data = stock_data[stock_data.index >= pd.to_datetime(start_date)]
+            if end_date:
+                print(f"过滤数据，到{end_date}结束")
+                stock_data = stock_data[stock_data.index <= pd.to_datetime(end_date)]
 
-        # 根据日期范围过滤数据
-        if start_date:
-            print(f"过滤数据，从{start_date}开始")
-            stock_data = stock_data[stock_data.index >= pd.to_datetime(start_date)]
-        if end_date:
-            print(f"过滤数据，到{end_date}结束")
-            stock_data = stock_data[stock_data.index <= pd.to_datetime(end_date)]
+            stock_data.to_csv(cache_file)
 
         return stock_data
 
@@ -164,4 +164,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # python ccleaner/day_fetcher.py SPY QQQ -s 2001-03-09 -e 2025-03-21 -d ./data -f
+    # python ccleaner/day_fetcher.py AAPL BRK.B MSFT QQQ SPY TSLA -s 2015-03-09 -e 2025-03-21 -d ./data -f
