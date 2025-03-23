@@ -169,7 +169,7 @@ class PriceAdjuster:
 
                 # 从天级数据中获取除权日的收盘价和复权收盘价
                 ex_date_str = event_date.date().strftime("%Y-%m-%d")
-                ex_close = self.daily_data[symbol].loc[ex_date_str, "Close"]
+                ex_close = self.daily_data[symbol].loc[ex_date_str, "close"]
                 adj_close = self.daily_data[symbol].loc[ex_date_str, "adjClose"]
                 div_factor = adj_close / ex_close
 

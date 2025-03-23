@@ -7,6 +7,7 @@ class Config:
         self.DATA_DIR = "data"
         self.START_DATE = "2015-03-09"
         self.END_DATE = "2025-03-21"
+        self.DATA_TYPE = "day"  # Data type, either 'day' or 'min'
 
         # Backtest Configuration
         self.INITIAL_CASH = 100000  # Initial Capital
@@ -21,10 +22,10 @@ class Config:
 
         # Stock Pool Configuration
         self.STOCK_LIST = [
-            "AAPL",  # Apple Inc.
-            "MSFT",  # Microsoft Corporation
-            "BRK.B",  # Berkshire Hathaway Inc.
-            "TSLA",  # Tesla Inc.
+            # "AAPL",  # Apple Inc.
+            # "MSFT",  # Microsoft Corporation
+            # "BRK.B",  # Berkshire Hathaway Inc.
+            # "TSLA",  # Tesla Inc.
             "SPY",
             "QQQ",
         ]
@@ -37,6 +38,7 @@ config = Config()
 DATA_DIR = config.DATA_DIR
 START_DATE = config.START_DATE
 END_DATE = config.END_DATE
+DATA_TYPE = config.DATA_TYPE
 INITIAL_CASH = config.INITIAL_CASH
 COMMISSION_RATE = config.COMMISSION_RATE
 STOCK_LIST = config.STOCK_LIST

@@ -89,10 +89,6 @@ def fetch_stock_data(
             # 重命名列
             stock_data = stock_data.rename(
                 columns={
-                    "open": "Open",
-                    "high": "High",
-                    "low": "Low",
-                    "close": "Close",
                     "volume": "Volume",
                 }
             )
