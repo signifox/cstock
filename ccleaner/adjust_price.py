@@ -14,37 +14,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_daily_close(
-    symbol: str,
-    date: datetime,
-    daily_data: pd.DataFrame,
-) -> Optional[float]:
-    """
-    从天级数据中获取指定日期的收盘价
-
-    Args:
-        symbol (str): 股票代码
-        date (datetime): 日期
-
-    Returns:
-        float: 收盘价，如果获取失败则返回None
-    """
-    try:
-        # 确保日期格式为YYYY-MM-DD
-        if not isinstance(date.date(), str):
-            date_str = date.date().strftime("%Y-%m-%d")
-        else:
-            date_str = date.date()
-        close_price = daily_data.loc[date_str, "Close"]
-        return float(close_price)
-    except KeyError:
-        logger.warning(f"未找到{symbol}在{date}的收盘价数据")
-        return None
-    except Exception as e:
-        logger.error(f"获取{symbol}在{date}的收盘价时发生错误: {str(e)}")
-        return None
-
-
 class PriceAdjuster:
     def __init__(self, symbols: List[str], daily_data_dir: str = "data"):
         self.daily_data_dir = daily_data_dir
@@ -134,101 +103,101 @@ class PriceAdjuster:
         if price_data.index.tz is None:
             price_data.index = price_data.index.tz_localize(utc_tz)
 
-        # 处理分红派息
+        # 收集所有调整事件
+        adjustment_events = []
+
+        # 收集分红事件
         for _, div in symbol_dividends.iterrows():
-            try:
-                ex_date = div["ex_dividend_date"]
-                cash_amount = div["cash_amount"]
+            ex_date = div["ex_dividend_date"]
+            cash_amount = div["cash_amount"]
 
-                # 跳过无效记录
-                if pd.isna(ex_date) or pd.isna(cash_amount):
-                    logger.warning(f"跳过无效的分红记录: {div['ticker']}")
-                    continue
+            # 跳过无效记录
+            if pd.isna(ex_date) or pd.isna(cash_amount):
+                logger.warning(f"跳过无效的分红记录: {div['ticker']}")
+                continue
 
-                # 确保ex_date是UTC时区
-                if ex_date.tzinfo is None:
-                    ex_date = utc_tz.localize(ex_date)
-                elif ex_date.tzinfo != utc_tz:
-                    ex_date = ex_date.astimezone(utc_tz)
+            # 确保ex_date是UTC时区
+            if ex_date.tzinfo is None:
+                ex_date = utc_tz.localize(ex_date)
+            elif ex_date.tzinfo != utc_tz:
+                ex_date = ex_date.astimezone(utc_tz)
 
-                # 检查ex_date是否在数据范围内
-                if (
-                    ex_date < price_data.index[0].to_pydatetime()
-                    or ex_date > price_data.index[-1].to_pydatetime()
-                ):
-                    logger.warning(
-                        f"除权日{ex_date}超出数据范围({price_data.index[0]} - {price_data.index[-1]})，跳过该分红记录"
-                    )
-                    continue
-
-                # 获取除权日当天的收盘价
-                ex_close = get_daily_close(symbol, ex_date, self.daily_data[symbol])
-                print(f"===================>{symbol}在{ex_date}的收盘价为{ex_close}")
-                # 获取除权日的收盘时间（UTC 21:00）
-                et_tz = pytz.timezone("America/New_York")
-                et_close = et_tz.localize(
-                    datetime.combine(
-                        ex_date.date(),
-                        datetime.strptime("16:00", "%H:%M").time(),
-                    )
+            # 检查ex_date是否在数据范围内
+            if (
+                ex_date < price_data.index[0].to_pydatetime()
+                or ex_date > price_data.index[-1].to_pydatetime()
+            ):
+                logger.warning(
+                    f"除权日{ex_date}超出数据范围({price_data.index[0]} - {price_data.index[-1]})，跳过该分红记录"
                 )
-                utc_close = et_close.astimezone(utc_tz)
+                continue
 
-                # 计算分红调整因子
-                div_factor = (ex_close - cash_amount) / ex_close
+            adjustment_events.append({"date": ex_date, "type": "dividend", "data": div})
 
-                # 更新复权因子
-                price_data.loc[
-                    price_data.index <= utc_close, "adjust_factor"
-                ] *= div_factor
-
-            except Exception as e:
-                logger.error(f"处理分红记录时出错 {div['ticker']}: {str(e)}")
-
-        # 处理拆股并股
+        # 收集拆股事件
         for _, split in symbol_splits.iterrows():
+            execution_date = split["execution_date"]
+
+            # 确保execution_date是UTC时区
+            if execution_date.tzinfo is None:
+                execution_date = utc_tz.localize(execution_date)
+            elif execution_date.tzinfo != utc_tz:
+                execution_date = execution_date.astimezone(utc_tz)
+
+            # 检查执行日期是否在数据范围内
+            if (
+                execution_date < price_data.index[0].to_pydatetime()
+                or execution_date > price_data.index[-1].to_pydatetime()
+            ):
+                logger.warning(
+                    f"拆股日期{execution_date}超出数据范围({price_data.index[0]} - {price_data.index[-1]})，跳过该拆股记录"
+                )
+                continue
+
+            adjustment_events.append(
+                {"date": execution_date, "type": "split", "data": split}
+            )
+
+        # 按时间从近到远排序事件
+        adjustment_events.sort(key=lambda x: x["date"], reverse=True)
+
+        # 处理所有事件
+        for event in adjustment_events:
             try:
-                execution_date = split["execution_date"]
+                event_date = event["date"]
+                event_type = event["type"]
 
-                # 确保execution_date是UTC时区
-                if execution_date.tzinfo is None:
-                    execution_date = utc_tz.localize(execution_date)
-                elif execution_date.tzinfo != utc_tz:
-                    execution_date = execution_date.astimezone(utc_tz)
+                # 从天级数据中获取除权日的收盘价和复权收盘价
+                ex_date_str = event_date.date().strftime("%Y-%m-%d")
+                ex_close = self.daily_data[symbol].loc[ex_date_str, "Close"]
+                adj_close = self.daily_data[symbol].loc[ex_date_str, "adjClose"]
+                div_factor = adj_close / ex_close
 
-                # 检查执行日期是否在数据范围内
-                if (
-                    execution_date < price_data.index[0].to_pydatetime()
-                    or execution_date > price_data.index[-1].to_pydatetime()
-                ):
-                    logger.warning(
-                        f"拆股日期{execution_date}超出数据范围({price_data.index[0]} - {price_data.index[-1]})，结束后续复权因子计算"
-                    )
-                    return price_data
-
-                # 计算拆股因子
-                split_factor = split["split_from"] / split["split_to"]
-                print(
-                    f"===================>{symbol}在{execution_date}的拆股因子为{split_factor}"
-                )
-                # 更新复权因子
-                # 初始化时区变量
+                # 根据事件类型设置不同的生效时间点
                 et_tz = pytz.timezone("America/New_York")
-                # 获取执行日的开盘时间（UTC 9:30）
-                et_open = et_tz.localize(
-                    datetime.combine(
-                        execution_date.date(),
-                        datetime.strptime("09:30", "%H:%M").time(),
+                # 先将event_date转换为UTC naive datetime
+                naive_event_date = event_date.astimezone(utc_tz).replace(tzinfo=None)
+                if event_type == "split":
+                    # 拆股事件在美东时间9:30开盘前生效
+                    naive_event_date = naive_event_date.replace(
+                        hour=9, minute=30, second=0, microsecond=0
                     )
+                    et_time = et_tz.localize(naive_event_date)
+                    event_time = et_time.astimezone(utc_tz)
+                else:  # dividend事件
+                    # 分红事件在美东时间16:00收盘前生效
+                    naive_event_date = naive_event_date.replace(
+                        hour=16, minute=0, second=0, microsecond=0
+                    )
+                    et_time = et_tz.localize(naive_event_date)
+                    event_time = et_time.astimezone(utc_tz)
+
+                # 更新复权因子
+                price_data.loc[price_data.index <= event_time, "adjust_factor"] = (
+                    div_factor
                 )
-                utc_open = et_open.astimezone(utc_tz)
-
-                price_data.loc[
-                    price_data.index <= utc_open, "adjust_factor"
-                ] *= split_factor
-
             except Exception as e:
-                logger.error(f"处理拆股记录时出错 {split['ticker']}: {str(e)}")
+                logger.error(f"处理{event_type}事件时出错 {symbol}: {str(e)}")
 
         return price_data
 

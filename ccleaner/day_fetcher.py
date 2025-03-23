@@ -53,7 +53,7 @@ def fetch_stock_data(
     force_update: bool = False,
 ) -> Optional[pd.DataFrame]:
     """
-    获取指定日期范围的未复权股票数据
+    获取指定日期范围的股票数据
 
     Args:
         symbol (str): 股票代码
@@ -75,15 +75,18 @@ def fetch_stock_data(
             logger.info(f"从本地文件加载{symbol}数据")
             stock_data = pd.read_csv(cache_file, index_col=0, parse_dates=True)
         else:
-            # 从akshare获取未复权数据
+            # 从akshare获取未复权和前复权数据
             logger.info(f"从AKShare获取{symbol}数据")
-            stock_data = ak.stock_us_daily(symbol=symbol, adjust="")
+            stock_data = ak.stock_us_daily(symbol=symbol)
+            qfq_data = ak.stock_us_daily(symbol=symbol, adjust="qfq")
 
             # 转换日期列为索引
             stock_data["date"] = pd.to_datetime(stock_data["date"])
+            qfq_data["date"] = pd.to_datetime(qfq_data["date"])
             stock_data = stock_data.set_index("date")
+            qfq_data = qfq_data.set_index("date")
 
-            # 保存到缓存文件
+            # 重命名列
             stock_data = stock_data.rename(
                 columns={
                     "open": "Open",
@@ -93,14 +96,30 @@ def fetch_stock_data(
                     "volume": "Volume",
                 }
             )
+            qfq_data = qfq_data.rename(
+                columns={
+                    "open": "adjOpen",
+                    "high": "adjHigh",
+                    "low": "adjLow",
+                    "close": "adjClose",
+                }
+            )
+
+            # 合并前复权数据
+            stock_data = pd.concat(
+                [stock_data, qfq_data[["adjOpen", "adjHigh", "adjLow", "adjClose"]]],
+                axis=1,
+            )
+
             # 根据日期范围过滤数据
             if start_date:
-                print(f"过滤数据，从{start_date}开始")
+                logger.info(f"过滤数据，从{start_date}开始")
                 stock_data = stock_data[stock_data.index >= pd.to_datetime(start_date)]
             if end_date:
-                print(f"过滤数据，到{end_date}结束")
+                logger.info(f"过滤数据，到{end_date}结束")
                 stock_data = stock_data[stock_data.index <= pd.to_datetime(end_date)]
 
+            # 保存到缓存文件
             stock_data.to_csv(cache_file)
 
         return stock_data
@@ -117,7 +136,7 @@ def fetch_multiple_stocks(
     force_update: bool = False,
 ) -> Dict[str, pd.DataFrame]:
     """
-    批量获取多个股票的未复权数据
+    批量获取多个股票的数据
 
     Args:
         symbols (List[str]): 股票代码列表
